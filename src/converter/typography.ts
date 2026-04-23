@@ -5,6 +5,7 @@
 import { ElementorTypography, GlobalFont, ElementorSize } from '../types/elementor';
 import { TextAnalysis } from '../types/figma-extended';
 import { rgbaToString } from './colors';
+import { pxToRemSize } from './units';
 
 let _fontCounter = 0;
 
@@ -148,12 +149,13 @@ export function textAnalysisToTypography(
   text: TextAnalysis,
   mobileBreak: number
 ): ElementorTypography {
+  // Typography sizes in rem so user font-size preferences scale the whole page.
   const settings: ElementorTypography = {
     typography_typography: 'custom',
     typography_font_family: text.fontFamily,
-    typography_font_size: { unit: 'px', size: text.fontSize },
-    typography_font_size_tablet: { unit: 'px', size: Math.round(text.fontSize * 0.9) },
-    typography_font_size_mobile: { unit: 'px', size: Math.round(text.fontSize * 0.8) },
+    typography_font_size: pxToRemSize(text.fontSize),
+    typography_font_size_tablet: pxToRemSize(text.fontSize * 0.9),
+    typography_font_size_mobile: pxToRemSize(text.fontSize * 0.8),
     typography_font_weight: text.fontWeight,
   };
 
@@ -174,7 +176,7 @@ export function textAnalysisToTypography(
   }
 
   if (text.letterSpacing !== 0) {
-    settings.typography_letter_spacing = { unit: 'px', size: text.letterSpacing };
+    settings.typography_letter_spacing = pxToRemSize(text.letterSpacing);
   }
 
   return settings;
@@ -203,7 +205,7 @@ export async function extractGlobalFonts(): Promise<GlobalFont[]> {
     };
 
     if (fontSize) {
-      gf.typography_font_size = { unit: 'px', size: fontSize };
+      gf.typography_font_size = pxToRemSize(fontSize);
     }
 
     result.push(gf);

@@ -13,7 +13,8 @@
 
 import { ElementorContainer, ElementorElement, ElementorContainerSettings, ElementorSize } from '../types/elementor';
 import { ConversionOptions } from '../types/figma-extended';
-import { analyseLayout, buildContainerSettings, inferHtmlTag, isTopLevelSection, inferDirectionFromChildren } from './layout';
+import { analyseLayout, buildContainerSettings, inferHtmlTag, isTopLevelSection, inferDirectionFromChildren, has12ColumnLayoutGuide } from './layout';
+import { pxToRemSize, remSpacing } from './units';
 import {
   makeWidgetId,
   mapTextNode,
@@ -29,6 +30,7 @@ import {
   mapAlert,
   mapFlipBox,
   mapVideoPlaceholder,
+  mapShapeAsSvgIcon,
   classifyComponent,
 } from './widgets';
 import { analyseFills } from './colors';
@@ -113,6 +115,41 @@ function isAbsolutePositioned(node: SceneNode): boolean {
   );
 }
 
+/**
+ * True when this node is itself hidden OR any ancestor is hidden. We only need
+ * to check the node (parents are skipped before recursion reaches children),
+ * but we also guard against being called with a hidden node directly.
+ */
+function isEffectivelyHidden(node: SceneNode): boolean {
+  return 'visible' in node && node.visible === false;
+}
+
+/**
+ * A child is a full-bleed break-out of its parent's 12-col grid when it
+ * (almost) fills the parent width. These map to content_width:'full' + 100%.
+ */
+function isFullBleedBreakout(child: SceneNode, parentWidth: number): boolean {
+  if (parentWidth <= 0) return false;
+  return child.width / parentWidth >= 0.95;
+}
+
+/** Small vector shapes are candidates for SVG → Icon widget emission. */
+const SVG_ICON_MAX_DIMENSION = 64;
+function isSvgIconCandidate(node: SceneNode): boolean {
+  const isShape =
+    node.type === 'VECTOR' ||
+    node.type === 'BOOLEAN_OPERATION' ||
+    node.type === 'STAR' ||
+    node.type === 'POLYGON';
+  if (!isShape) return false;
+  return (
+    node.width > 0 &&
+    node.height > 0 &&
+    node.width <= SVG_ICON_MAX_DIMENSION &&
+    node.height <= SVG_ICON_MAX_DIMENSION
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Container Builder
 // ─────────────────────────────────────────────────────────────────────────────
@@ -126,7 +163,9 @@ function buildContainer(
   rootWidth: number,
   childLayoutGrow: number,
   parentIsRow: boolean,
-  parentIsGrid: boolean
+  parentIsGrid: boolean,
+  parentHas12Grid: boolean,
+  isBreakout: boolean
 ): ElementorContainer {
   const id = makeWidgetId();
 
@@ -149,30 +188,31 @@ function buildContainer(
       }
     }
 
-    settings = buildContainerSettings(layout, opts, isTopLevel, parentWidth, parentIsRow, bgColor || undefined, bgFill, parentIsGrid);
+    settings = buildContainerSettings(
+      layout, opts, isTopLevel, parentWidth, parentIsRow,
+      bgColor || undefined, bgFill, parentIsGrid, parentHas12Grid, isBreakout
+    );
 
     // Fix: after buildContainerSettings sets html_tag to 'div', update from real name
     settings.html_tag = inferHtmlTag(node.name);
 
-    // Corner radius
+    // Corner radius — rem for accessibility.
     const cr = 'cornerRadius' in node ? node.cornerRadius : undefined;
     if (cr && cr !== figma.mixed && cr !== 0) {
-      const v = String(Math.round(cr as number));
-      settings.border_radius = { top: v, right: v, bottom: v, left: v, unit: 'px' };
+      const v = String(Math.round((cr as number) / 16 * 1000) / 1000);
+      settings.border_radius = { top: v, right: v, bottom: v, left: v, unit: 'rem' };
       settings.overflow = 'hidden';
     } else if ('topLeftRadius' in node) {
       const f = node as FrameNode;
-      const tl = Math.round(f.topLeftRadius ?? 0);
-      const tr = Math.round(f.topRightRadius ?? 0);
-      const br = Math.round(f.bottomRightRadius ?? 0);
-      const bl = Math.round(f.bottomLeftRadius ?? 0);
+      const tl = (f.topLeftRadius ?? 0) / 16;
+      const tr = (f.topRightRadius ?? 0) / 16;
+      const br = (f.bottomRightRadius ?? 0) / 16;
+      const bl = (f.bottomLeftRadius ?? 0) / 16;
       if (tl + tr + br + bl > 0) {
+        const r = (n: number) => String(Math.round(n * 1000) / 1000);
         settings.border_radius = {
-          top: String(tl),
-          right: String(tr),
-          bottom: String(br),
-          left: String(bl),
-          unit: 'px',
+          top: r(tl), right: r(tr), bottom: r(br), left: r(bl),
+          unit: 'rem',
         };
         settings.overflow = 'hidden';
       }
@@ -236,7 +276,7 @@ function buildContainer(
     // Min-height for fixed-size frames (non-auto-layout)
     // so empty/sparse containers don't collapse to zero height.
     if (!layout.isAutoLayout && node.height > 0) {
-      settings.min_height = makeSize(Math.round(node.height), 'px');
+      settings.min_height = pxToRemSize(node.height);
     }
 
   } else {
@@ -244,14 +284,17 @@ function buildContainer(
     const groupChildren = 'children' in node ? (node as GroupNode).children : [];
     const groupLayout = inferDirectionFromChildren(groupChildren);
 
-    let customWidth = makeSize(node.width, 'px');
-    if (parentIsGrid) {
+    let customWidth = pxToRemSize(node.width);
+    if (isBreakout || (isTopLevel)) {
       customWidth = makeSize(100, '%');
+    } else if (parentIsGrid) {
+      customWidth = makeSize(100, '%');
+    } else if (parentHas12Grid && parentWidth > 0) {
+      const pct = Math.round((node.width / parentWidth) * 100);
+      customWidth = makeSize(Math.min(Math.max(pct, 5), 100), '%');
     } else if (parentIsRow && parentWidth > 0) {
       const pct = Math.round((node.width / parentWidth) * 100);
       customWidth = makeSize(Math.min(Math.max(pct, 5), 100), '%');
-    } else if (isTopLevel) {
-      customWidth = makeSize(100, '%');
     }
 
     settings = {
@@ -260,13 +303,14 @@ function buildContainer(
       _element_width: 'initial',
       _element_custom_width: customWidth,
       html_tag: inferHtmlTag(node.name),
-      min_height: makeSize(Math.round((node as GroupNode).height ?? 0), 'px'),
+      min_height: pxToRemSize((node as GroupNode).height ?? 0),
     };
-    if (isTopLevel) settings.content_width = 'full';
+    if (isTopLevel || isBreakout) settings.content_width = 'full';
+    else if (parentHas12Grid) settings.content_width = 'boxed';
     if (groupLayout.gap > 0) {
-      settings.flex_gap = makeSize(groupLayout.gap);
-      settings.elements_gap = makeSize(groupLayout.gap);
-      settings.gap = makeSize(groupLayout.gap);
+      settings.flex_gap = pxToRemSize(groupLayout.gap);
+      settings.elements_gap = pxToRemSize(groupLayout.gap);
+      settings.gap = pxToRemSize(groupLayout.gap);
     }
   }
 
@@ -296,7 +340,9 @@ export function convertNode(
   isTopLevel: boolean,
   childLayoutGrow = 0,
   parentIsRow = false,
-  parentIsGrid = false
+  parentIsGrid = false,
+  parentHas12Grid = false,
+  isBreakout = false
 ): ElementorElement | null {
   _nodeCount++;
 
@@ -351,7 +397,12 @@ export function convertNode(
     return mapDividerNode(node);
   }
 
-  // ── COMPLEX VECTOR (star, polygon, raw vector path) ──────────────────────
+  // ── VECTOR / BOOLEAN_OPERATION / STAR / POLYGON ──────────────────────────
+  // Small shapes → Elementor Icon widget backed by an exported SVG asset.
+  // Larger/complex vectors remain unsupported.
+  if (isSvgIconCandidate(node)) {
+    return mapShapeAsSvgIcon(node, opts);
+  }
   if (isVectorShape(node)) {
     return null;
   }
@@ -387,8 +438,8 @@ export function convertNode(
             background_background: 'classic',
             background_color: fill.color ?? '#ffffff',
             _element_width: 'initial',
-            _element_custom_width: makeSize(Math.round(node.width), 'px'),
-            min_height: makeSize(Math.round(node.height), 'px'),
+            _element_custom_width: pxToRemSize(node.width),
+            min_height: pxToRemSize(node.height),
             html_tag: 'div',
           },
           elements: [],
@@ -472,8 +523,10 @@ export function convertNode(
     );
 
     // Determine this node's layout flavour so children know how to size themselves.
-    // thisIsGrid → CSS grid; children must not set their own width.
-    // thisIsRow  → flex row; children size as % of parent.
+    // thisIsGrid    → CSS grid; children must not set their own width.
+    // thisIsRow     → flex row; children size as % of parent.
+    // thisHas12Grid → Figma 12-col Layout Guide is attached to this frame;
+    //                 children should be boxed within it unless they break out.
     const { thisIsRow, thisIsGrid } = (() => {
       if ('layoutMode' in node) {
         const f = node as FrameNode | ComponentNode | InstanceNode;
@@ -485,11 +538,13 @@ export function convertNode(
       }
       return { thisIsRow: false, thisIsGrid: false };
     })();
+    const thisHas12Grid = has12ColumnLayoutGuide(node);
 
     for (const child of children) {
       // Pass the child's own layoutGrow value so the child container
       // can determine whether it is a "fill" element.
       const grow = 'layoutGrow' in child ? (child as FrameNode).layoutGrow ?? 0 : 0;
+      const childIsBreakout = thisHas12Grid && isFullBleedBreakout(child, node.width);
       const el = convertNode(
         child,
         opts,
@@ -500,7 +555,9 @@ export function convertNode(
         false,
         grow,
         thisIsRow,
-        thisIsGrid
+        thisIsGrid,
+        thisHas12Grid,
+        childIsBreakout
       );
       if (el) childElements.push(el);
     }
@@ -515,7 +572,9 @@ export function convertNode(
       rootWidth,
       childLayoutGrow,
       parentIsRow,
-      parentIsGrid
+      parentIsGrid,
+      parentHas12Grid,
+      isBreakout
     );
   }
 
@@ -534,6 +593,7 @@ export function convertRoot(
   resetNodeCount();
 
   const rootWidth = root.width;
+  const rootHas12Grid = has12ColumnLayoutGuide(root);
   const elements: ElementorElement[] = [];
 
   // If the root has auto-layout children, treat each direct child as a "section"
@@ -542,7 +602,11 @@ export function convertRoot(
       if (child.visible === false) continue;
       if (isAbsolutePositioned(child)) continue;
       const grow = 'layoutGrow' in child ? (child as FrameNode).layoutGrow ?? 0 : 0;
-      const el = convertNode(child, opts, 0, true, rootWidth, rootWidth, true, grow);
+      const childIsBreakout = rootHas12Grid && isFullBleedBreakout(child, rootWidth);
+      const el = convertNode(
+        child, opts, 0, true, rootWidth, rootWidth, true, grow,
+        false, false, rootHas12Grid, childIsBreakout
+      );
       if (el) elements.push(el);
     }
   } else {

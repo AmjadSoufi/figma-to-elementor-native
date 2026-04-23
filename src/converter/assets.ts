@@ -7,7 +7,7 @@ import { AssetManifest } from '../types/elementor';
 import { ConversionOptions } from '../types/figma-extended';
 
 const _manifest: AssetManifest[] = [];
-const _exportQueue: Array<{ nodeId: string; nodeName: string; format: 'PNG' | 'WEBP' }> = [];
+const _exportQueue: Array<{ nodeId: string; nodeName: string; format: 'PNG' | 'WEBP' | 'SVG' }> = [];
 
 /** Reset state at start of conversion */
 export function resetAssets(): void {
@@ -45,6 +45,28 @@ export function queueImageExport(
   return placeholder;
 }
 
+/**
+ * Queue a node for SVG export. Returns the placeholder URL that the Elementor
+ * Icon widget will reference (the UI later rewrites it to the uploaded URL).
+ */
+export function queueSvgExport(nodeId: string, nodeName: string): string {
+  const safe = nodeName.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'icon';
+  const filename = `${safe}_${nodeId.replace(':', '-')}.svg`;
+  const placeholder = `__ASSET__/${filename}`;
+
+  if (!_exportQueue.find((e) => e.nodeId === nodeId)) {
+    _exportQueue.push({ nodeId, nodeName, format: 'SVG' });
+    _manifest.push({
+      node_id: nodeId,
+      node_name: nodeName,
+      filename,
+      format: 'SVG',
+      placeholder_url: placeholder,
+    });
+  }
+  return placeholder;
+}
+
 /** Get placeholder URL for a node that was already queued */
 export function getPlaceholderUrl(nodeId: string): string | undefined {
   const entry = _manifest.find((m) => m.node_id === nodeId);
@@ -68,13 +90,16 @@ export async function executeImageExports(
       if (!node || !('exportAsync' in node)) continue;
 
       const exportable = node as ExportMixin;
-      const data = await exportable.exportAsync({
-        format: 'PNG', // Figma exportAsync supports PNG/JPG/SVG/PDF only
-        constraint: { type: 'SCALE', value: opts.imageScale },
-      });
+      const data = entry.format === 'SVG'
+        ? await exportable.exportAsync({ format: 'SVG' })
+        : await exportable.exportAsync({
+            format: 'PNG',
+            constraint: { type: 'SCALE', value: opts.imageScale },
+          });
 
       const manifest = _manifest.find((m) => m.node_id === entry.nodeId);
-      const filename = manifest?.filename ?? `${entry.nodeId}.png`;
+      const fallbackExt = entry.format === 'SVG' ? 'svg' : 'png';
+      const filename = manifest?.filename ?? `${entry.nodeId}.${fallbackExt}`;
 
       results.push({ nodeId: entry.nodeId, filename, data });
     } catch (err) {

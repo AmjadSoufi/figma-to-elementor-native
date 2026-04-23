@@ -64,7 +64,7 @@ function isGenericName(name: string): boolean {
 type OverlapPair = { parentName: string; a: { id: string; name: string }; b: { id: string; name: string } };
 
 function findOverlappingPairs(node: TraversalNode): OverlapPair[] {
-  const children = node.children;
+  const children = node.children?.filter((c) => c.visible !== false);
   if (!children || children.length < 2) return [];
   const pairs: OverlapPair[] = [];
   for (let i = 0; i < children.length - 1; i++) {
@@ -89,8 +89,12 @@ function findOverlappingPairs(node: TraversalNode): OverlapPair[] {
 }
 
 function walk(node: SceneNode, stats: Stats, depth: number, options?: ConversionOptions): void {
+  // Skip hidden layers and their entire subtree — conversion ignores them, so
+  // they shouldn't contribute to the readiness score either.
+  if ('visible' in node && node.visible === false) return;
+
   const lName = node.name.toLowerCase();
-  
+
   if (options?.skipHeaderFooter === true && depth === 1) {
     if (lName.includes('header') || lName.includes('footer') || lName.includes('nav')) {
       return;

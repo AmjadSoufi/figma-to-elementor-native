@@ -6,8 +6,44 @@
 import { ElementorContainerSettings, ElementorSize, ElementorSpacing } from '../types/elementor';
 import { LayoutAnalysis, AnalysedFill } from '../types/figma-extended';
 import { ConversionOptions } from '../types/figma-extended';
+import { REM_ROOT, pxToRemSize, remSpacing } from './units';
 
 type LayoutFrame = FrameNode | ComponentNode | InstanceNode;
+
+/**
+ * A Figma frame has a "12-column layout guide" when its layoutGrids contain
+ * a visible COLUMNS grid with exactly 12 sections. Used as the authoritative
+ * signal for "this frame hosts the 12-col grid".
+ */
+export function has12ColumnLayoutGuide(node: SceneNode): boolean {
+  if (!('layoutGrids' in node)) return false;
+  const grids = (node as FrameNode).layoutGrids;
+  if (!Array.isArray(grids) || grids.length === 0) return false;
+  return grids.some(
+    (g) => g.visible !== false && g.pattern === 'COLUMNS' && (g as GridLayoutGrid & { count?: number }).count === 12
+  );
+}
+
+/**
+ * Width of the 12-col grid's content band (all columns + gutters). For
+ * COLUMNS grids with alignment='CENTER'|'MIN'|'MAX' Figma stores offset,
+ * count, width, gutter. We reconstruct: count*width + (count-1)*gutter.
+ *
+ * Returns 0 if no usable 12-col grid is found.
+ */
+export function get12ColumnContentWidth(node: SceneNode): number {
+  if (!('layoutGrids' in node)) return 0;
+  const grids = (node as FrameNode).layoutGrids;
+  if (!Array.isArray(grids)) return 0;
+  const grid = grids.find(
+    (g) => g.visible !== false && g.pattern === 'COLUMNS' && (g as GridLayoutGrid & { count?: number }).count === 12
+  ) as (GridLayoutGrid & { count: number; sectionSize?: number; gutterSize?: number }) | undefined;
+  if (!grid) return 0;
+  const col = grid.sectionSize ?? 0;
+  const gutter = grid.gutterSize ?? 0;
+  if (col <= 0) return 0;
+  return grid.count * col + (grid.count - 1) * gutter;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Alignment Mappers
@@ -252,19 +288,19 @@ export function inferHtmlTag(name: string): ElementorContainerSettings['html_tag
 // Container Settings Builder
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Spacings/radii in this module are emitted as rem for accessibility.
+// See units.ts for the convention.
 function makeSpacing(t: number, r: number, b: number, l: number): ElementorSpacing {
-  return {
-    top: String(Math.round(t)),
-    right: String(Math.round(r)),
-    bottom: String(Math.round(b)),
-    left: String(Math.round(l)),
-    unit: 'px',
-    isLinked: t === r && r === b && b === l,
-  };
+  return remSpacing(t, r, b, l);
 }
 
 function makeSize(size: number, unit: ElementorSize['unit'] = 'px'): ElementorSize {
   return { unit, size: Math.round(size) };
+}
+
+/** Shorthand: a gap/size in rem. */
+function remGap(px: number): ElementorSize {
+  return pxToRemSize(px);
 }
 
 /**
@@ -293,7 +329,9 @@ export function buildContainerSettings(
   parentIsRow: boolean,
   bgColor?: string,
   bgFill?: AnalysedFill,
-  parentIsGrid = false
+  parentIsGrid = false,
+  parentHas12Grid = false,
+  isFullBleedBreakout = false
 ): ElementorContainerSettings {
   const settings: ElementorContainerSettings = {};
 
@@ -307,11 +345,11 @@ export function buildContainerSettings(
     const colGap = layout.gap;
     const rowGap = layout.gapColumn || layout.gap;
     settings.grid_gaps = {
-      column: colGap,
-      row: rowGap,
+      column: colGap / REM_ROOT,
+      row: rowGap / REM_ROOT,
       isLinked: colGap === rowGap,
-      unit: 'px',
-      size: colGap,
+      unit: 'rem',
+      size: colGap / REM_ROOT,
     };
     settings.grid_auto_flow = 'row';
     // Responsive: collapse to 2 cols on tablet, 1 on mobile
@@ -326,12 +364,12 @@ export function buildContainerSettings(
     settings.justify_content = layout.primaryAxisAlign;
     settings.align_items = layout.crossAxisAlign;
     if (layout.gap > 0) {
-      settings.flex_gap = makeSize(layout.gap);
-      settings.elements_gap = makeSize(layout.gap);
-      settings.gap = makeSize(layout.gap);
+      settings.flex_gap = remGap(layout.gap);
+      settings.elements_gap = remGap(layout.gap);
+      settings.gap = remGap(layout.gap);
     }
     if (layout.isWrap && layout.gapColumn !== layout.gap) {
-      settings.flex_gap_column = makeSize(layout.gapColumn);
+      settings.flex_gap_column = remGap(layout.gapColumn);
     }
   } else if (layout.direction === 'column') {
     settings.flex_direction = 'column';
@@ -339,9 +377,9 @@ export function buildContainerSettings(
       settings.justify_content = layout.primaryAxisAlign;
       settings.align_items = layout.crossAxisAlign;
       if (layout.gap > 0) {
-        settings.flex_gap = makeSize(layout.gap);
-        settings.elements_gap = makeSize(layout.gap);
-        settings.gap = makeSize(layout.gap);
+        settings.flex_gap = remGap(layout.gap);
+        settings.elements_gap = remGap(layout.gap);
+        settings.gap = remGap(layout.gap);
       }
     }
   } else {
@@ -391,6 +429,30 @@ export function buildContainerSettings(
     settings.width = makeSize(100, '%');
     settings.width_tablet = makeSize(100, '%');
     settings.width_mobile = makeSize(100, '%');
+  } else if (isFullBleedBreakout) {
+    // Child spans the full parent width and is explicitly breaking out of the
+    // 12-col grid — emit full-bleed width.
+    settings.content_width = 'full';
+    settings._element_width = 'initial';
+    settings._element_custom_width = makeSize(100, '%');
+    settings.width = makeSize(100, '%');
+    settings.width_tablet = makeSize(100, '%');
+    settings.width_mobile = makeSize(100, '%');
+  } else if (parentHas12Grid) {
+    // Inside the 12-col grid: keep the child boxed within the grid's content
+    // band. Use its fractional share of the parent (expressed in %) so it
+    // lines up with the grid columns at any viewport.
+    settings.content_width = 'boxed';
+    if (parentWidth > 0) {
+      const pct = Math.min(Math.max(Math.round((layout.width / parentWidth) * 100), 5), 100);
+      settings._element_width = 'initial';
+      settings._element_custom_width = makeSize(pct, '%');
+    } else {
+      settings._element_width = 'initial';
+      settings._element_custom_width = pxToRemSize(layout.width);
+    }
+    settings.width_tablet = makeSize(100, '%');
+    settings.width_mobile = makeSize(100, '%');
   } else if (parentIsGrid) {
     // Grid cell already has its width; stretch the child to fill it.
     settings._element_width = 'initial';
@@ -409,17 +471,15 @@ export function buildContainerSettings(
     // Fixed size.
     // When the parent is a ROW, express width as % so flex columns work at
     // any viewport size and Elementor's flex model places them side by side.
-    // When the parent is a COLUMN, px is fine.
+    // When the parent is a COLUMN, rem so the layout scales with user zoom.
     if (parentIsRow && parentWidth > 0) {
-      // Use the same parentWidth-based ratio; downstream parent padding is
-      // already reflected in the ratio because Figma sized the child to fit.
       const pct = (layout.width / parentWidth) * 100;
       const safePct = Math.min(Math.max(Math.round(pct), 5), 100);
       settings._element_width = 'initial';
       settings._element_custom_width = makeSize(safePct, '%');
     } else {
       settings._element_width = 'initial';
-      settings._element_custom_width = makeSize(layout.width, 'px');
+      settings._element_custom_width = pxToRemSize(layout.width);
     }
   }
 
@@ -449,7 +509,7 @@ export function isTopLevelSection(
 export function buildBoxedInnerSettings(opts: ConversionOptions): Partial<ElementorContainerSettings> {
   return {
     content_width: 'boxed',
-    width: { unit: 'px', size: opts.containerMaxWidth },
+    width: pxToRemSize(opts.containerMaxWidth),
     width_tablet: { unit: '%', size: 100 },
     width_mobile: { unit: '%', size: 100 },
   };

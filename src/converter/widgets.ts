@@ -32,7 +32,8 @@ import {
 import { TextAnalysis, ConversionOptions } from '../types/figma-extended';
 import { textAnalysisToTypography, analyseTextNode } from './typography';
 import { analyseFills, rgbaToString } from './colors';
-import { queueImageExport, getImageFillHash } from './assets';
+import { queueImageExport, queueSvgExport, getImageFillHash } from './assets';
+import { pxToRemSize, remSpacing, REM_ROOT } from './units';
 import {
   checkEffects,
   checkFills,
@@ -64,19 +65,17 @@ function makeSize(size: number, unit: ElementorSize['unit'] = 'px'): ElementorSi
 
 function makeBorderRadius(r: number | PluginAPI['mixed']): ElementorBorderRadius | undefined {
   if (!r || r === figma.mixed) return undefined;
-  const v = String(Math.round(r as number));
-  return { top: v, right: v, bottom: v, left: v, unit: 'px', isLinked: true };
+  const v = String(Math.round(((r as number) / REM_ROOT) * 1000) / 1000);
+  return { top: v, right: v, bottom: v, left: v, unit: 'rem', isLinked: true };
 }
 
 function makeBorderRadiusCorners(
   tl: number, tr: number, br: number, bl: number
 ): ElementorBorderRadius {
+  const r = (n: number) => String(Math.round((n / REM_ROOT) * 1000) / 1000);
   return {
-    top: String(Math.round(tl)),
-    right: String(Math.round(tr)),
-    bottom: String(Math.round(br)),
-    left: String(Math.round(bl)),
-    unit: 'px',
+    top: r(tl), right: r(tr), bottom: r(br), left: r(bl),
+    unit: 'rem',
     isLinked: false,
   };
 }
@@ -238,10 +237,13 @@ export function mapDividerNode(node: SceneNode): ElementorWidget {
     ? rgbaToString(solidStroke.color.r, solidStroke.color.g, solidStroke.color.b, solidStroke.opacity ?? 1)
     : '#cccccc';
 
+  // Stroke weight stays in px — hairlines in rem create sub-pixel rendering.
+  const strokePx = 'strokeWeight' in node && node.strokeWeight !== figma.mixed
+    ? Math.round((node as LineNode).strokeWeight as number ?? 1) : 1;
   const s: DividerSettings = {
     style: 'solid',
     color,
-    weight: makeSize('strokeWeight' in node && node.strokeWeight !== figma.mixed ? Math.round((node as LineNode).strokeWeight as number ?? 1) : 1),
+    weight: { unit: 'px', size: strokePx },
     width: makeSize(100, '%'),
     align: 'center',
   };
@@ -253,7 +255,7 @@ export function mapSpacerNode(node: SceneNode): ElementorWidget {
   const id = makeWidgetId();
   const height = node.height ?? 24;
   const s: SpacerSettings = {
-    space: makeSize(Math.round(height)),
+    space: pxToRemSize(height),
   };
   return widget(id, 'spacer', s as Record<string, unknown>);
 }
@@ -273,7 +275,9 @@ export function mapButtonComponent(
   let radius: ElementorBorderRadius | undefined;
 
   if ('children' in node && node.children) {
-    const textChild = node.children.find((c) => c.type === 'TEXT') as TextNode | undefined;
+    const textChild = node.children.find(
+      (c) => c.type === 'TEXT' && c.visible !== false
+    ) as TextNode | undefined;
     if (textChild) {
       label = textChild.characters;
       // text color
@@ -306,9 +310,9 @@ export function mapButtonComponent(
     ...(radius ? { border_radius: radius } : {}),
     ...borderSettings,
     typography_typography: 'custom',
-    typography_font_size: makeSize(14),
+    typography_font_size: pxToRemSize(14),
     typography_font_weight: '600',
-    text_padding: { top: '12', right: '24', bottom: '12', left: '24', unit: 'px' },
+    text_padding: remSpacing(12, 24, 12, 24),
     hover_animation: 'grow',
   };
   return widget(id, 'button', s as Record<string, unknown>);
@@ -355,10 +359,44 @@ export function mapIconComponent(node: SceneNode, opts: ConversionOptions): Elem
     icon: { value: iconValue, library: 'fa-solid' },
     view: 'default',
     align: 'center',
-    size: makeSize(Math.min(node.width, node.height, 48)),
+    size: pxToRemSize(Math.min(node.width, node.height, 48)),
     ...(color ? { primary_color: color } : {}),
   };
   return widget(id, 'icon', s as Record<string, unknown>);
+}
+
+/**
+ * VECTOR / BOOLEAN_OPERATION / STAR / POLYGON → Icon widget backed by
+ * a Figma-exported SVG. The placeholder URL resolves to an uploaded asset
+ * once the template is imported into WordPress.
+ */
+export function mapShapeAsSvgIcon(node: SceneNode, opts: ConversionOptions): ElementorWidget {
+  const id = makeWidgetId();
+  const url = queueSvgExport(node.id, node.name);
+
+  // Pick a tint color from the first solid fill if available.
+  let color = '';
+  if ('fills' in node && Array.isArray(node.fills)) {
+    const fill = analyseFills(node.fills as Paint[]);
+    if (fill.type === 'solid') color = fill.color ?? '';
+  }
+
+  const sizePx = Math.max(16, Math.min(node.width, node.height, 64));
+
+  const s: Record<string, unknown> = {
+    // Elementor's unified icon control — `library: 'svg'` tells the editor
+    // to use the custom SVG referenced by `value.url`.
+    selected_icon: {
+      value: { url, id: 0 },
+      library: 'svg',
+    },
+    view: 'default',
+    align: 'center',
+    size: pxToRemSize(sizePx),
+  };
+  if (color) s.primary_color = color;
+
+  return widget(id, 'icon', s);
 }
 
 /** ICON BOX (icon + heading + text in one container) → Icon Box widget */
@@ -373,7 +411,7 @@ export function mapIconBoxComponent(
   let iconValue = 'fas fa-star';
 
   if ('children' in node && node.children) {
-    const texts = node.children.filter((c): c is TextNode => c.type === 'TEXT');
+    const texts = node.children.filter((c): c is TextNode => c.type === 'TEXT' && c.visible !== false);
     // Largest font = title, rest = description
     const sorted = [...texts].sort(
       (a, b) =>
@@ -383,7 +421,7 @@ export function mapIconBoxComponent(
     if (sorted[1]) description = sorted[1].characters;
 
     const iconChild = node.children.find(
-      (c) => c.type === 'VECTOR' || c.type === 'FRAME' || c.name.toLowerCase().includes('icon')
+      (c) => c.visible !== false && (c.type === 'VECTOR' || c.type === 'FRAME' || c.name.toLowerCase().includes('icon'))
     );
     if (iconChild) {
       const hint = classifyComponent(iconChild.name);
@@ -415,7 +453,7 @@ export function mapTestimonialComponent(
   let imageUrl = '';
 
   if ('children' in node && node.children) {
-    const texts = node.children.filter((c): c is TextNode => c.type === 'TEXT');
+    const texts = node.children.filter((c): c is TextNode => c.type === 'TEXT' && c.visible !== false);
     // Heuristics: longest text = content, shorter ones = name/job
     const sorted = [...texts].sort((a, b) => b.characters.length - a.characters.length);
     if (sorted[0]) content = sorted[0].characters;
@@ -424,7 +462,7 @@ export function mapTestimonialComponent(
 
     // Image
     const imgNode = node.children.find(
-      (c) => (c.type === 'RECTANGLE' || c.type === 'ELLIPSE') && getImageFillHash(c) !== null
+      (c) => c.visible !== false && (c.type === 'RECTANGLE' || c.type === 'ELLIPSE') && getImageFillHash(c) !== null
     );
     if (imgNode && opts.exportImages) {
       imageUrl = queueImageExport(imgNode.id, imgNode.name, opts.imageFormat);
@@ -447,7 +485,7 @@ export function mapStarRating(node: SceneNode): ElementorWidget {
   const s: StarRatingSettings = {
     rating_scale: '5',
     rating: 5,
-    star_size: makeSize(20),
+    star_size: pxToRemSize(20),
     align: 'left',
   };
   return widget(id, 'star-rating', s as Record<string, unknown>);
@@ -463,7 +501,7 @@ export function mapCounter(
   let title = '';
 
   if ('children' in node && node.children) {
-    const texts = node.children.filter((c): c is TextNode => c.type === 'TEXT');
+    const texts = node.children.filter((c): c is TextNode => c.type === 'TEXT' && c.visible !== false);
     for (const t of texts) {
       const num = parseInt(t.characters.replace(/[^0-9]/g, ''), 10);
       if (!isNaN(num) && num > 0) endNum = num;
@@ -491,7 +529,7 @@ export function mapAlert(
   let alertDesc = '';
 
   if ('children' in node && node.children) {
-    const texts = node.children.filter((c): c is TextNode => c.type === 'TEXT');
+    const texts = node.children.filter((c): c is TextNode => c.type === 'TEXT' && c.visible !== false);
     if (texts[0]) alertTitle = texts[0].characters;
     if (texts[1]) alertDesc = texts[1].characters;
   }
@@ -516,7 +554,7 @@ export function mapFlipBox(
   let backDesc = '';
 
   if ('children' in node && node.children) {
-    const sides = node.children.filter((c) => 'children' in c);
+    const sides = node.children.filter((c) => 'children' in c && c.visible !== false);
     if (sides[0] && 'children' in sides[0]) {
       const texts = (sides[0] as FrameNode).children.filter((c): c is TextNode => c.type === 'TEXT');
       if (texts[0]) frontTitle = texts[0].characters;
@@ -546,8 +584,8 @@ export function mapFlipBox(
     back_title_text: backTitle || 'Back Title',
     back_description_text: backDesc,
     back_background_color: backBg,
-    height: makeSize(300),
-    border_radius: { top: '8', right: '8', bottom: '8', left: '8', unit: 'px' },
+    height: pxToRemSize(300),
+    border_radius: { top: '0.5', right: '0.5', bottom: '0.5', left: '0.5', unit: 'rem' },
   };
   return widget(id, 'flip-box', s as Record<string, unknown>);
 }
