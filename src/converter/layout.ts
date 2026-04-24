@@ -3,10 +3,10 @@
 // Container settings (flex/grid direction, gap, padding, alignment).
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { ElementorContainerSettings, ElementorSize, ElementorSpacing } from '../types/elementor';
-import { LayoutAnalysis, AnalysedFill } from '../types/figma-extended';
-import { ConversionOptions } from '../types/figma-extended';
-import { REM_ROOT, pxToRemSize, remSpacing } from './units';
+import { ElementorContainerSettings, ElementorSize, ElementorSpacing } from "../types/elementor";
+import { LayoutAnalysis, AnalysedFill } from "../types/figma-extended";
+import { ConversionOptions } from "../types/figma-extended";
+import { pxSpacing } from "./units";
 
 type LayoutFrame = FrameNode | ComponentNode | InstanceNode;
 
@@ -16,11 +16,14 @@ type LayoutFrame = FrameNode | ComponentNode | InstanceNode;
  * signal for "this frame hosts the 12-col grid".
  */
 export function has12ColumnLayoutGuide(node: SceneNode): boolean {
-  if (!('layoutGrids' in node)) return false;
+  if (!("layoutGrids" in node)) return false;
   const grids = (node as FrameNode).layoutGrids;
   if (!Array.isArray(grids) || grids.length === 0) return false;
   return grids.some(
-    (g) => g.visible !== false && g.pattern === 'COLUMNS' && (g as GridLayoutGrid & { count?: number }).count === 12
+    (g) =>
+      g.visible !== false &&
+      g.pattern === "COLUMNS" &&
+      (g as GridLayoutGrid & { count?: number }).count === 12,
   );
 }
 
@@ -32,11 +35,14 @@ export function has12ColumnLayoutGuide(node: SceneNode): boolean {
  * Returns 0 if no usable 12-col grid is found.
  */
 export function get12ColumnContentWidth(node: SceneNode): number {
-  if (!('layoutGrids' in node)) return 0;
+  if (!("layoutGrids" in node)) return 0;
   const grids = (node as FrameNode).layoutGrids;
   if (!Array.isArray(grids)) return 0;
   const grid = grids.find(
-    (g) => g.visible !== false && g.pattern === 'COLUMNS' && (g as GridLayoutGrid & { count?: number }).count === 12
+    (g) =>
+      g.visible !== false &&
+      g.pattern === "COLUMNS" &&
+      (g as GridLayoutGrid & { count?: number }).count === 12,
   ) as (GridLayoutGrid & { count: number; sectionSize?: number; gutterSize?: number }) | undefined;
   if (!grid) return 0;
   const col = grid.sectionSize ?? 0;
@@ -50,27 +56,27 @@ export function get12ColumnContentWidth(node: SceneNode): number {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function mapPrimaryAlign(
-  value: 'MIN' | 'CENTER' | 'MAX' | 'SPACE_BETWEEN'
-): 'flex-start' | 'center' | 'flex-end' | 'space-between' {
-  const map: Record<string, 'flex-start' | 'center' | 'flex-end' | 'space-between'> = {
-    MIN: 'flex-start',
-    CENTER: 'center',
-    MAX: 'flex-end',
-    SPACE_BETWEEN: 'space-between',
+  value: "MIN" | "CENTER" | "MAX" | "SPACE_BETWEEN",
+): "flex-start" | "center" | "flex-end" | "space-between" {
+  const map: Record<string, "flex-start" | "center" | "flex-end" | "space-between"> = {
+    MIN: "flex-start",
+    CENTER: "center",
+    MAX: "flex-end",
+    SPACE_BETWEEN: "space-between",
   };
-  return map[value] ?? 'flex-start';
+  return map[value] ?? "flex-start";
 }
 
 function mapCounterAlign(
-  value: 'MIN' | 'CENTER' | 'MAX' | 'BASELINE'
-): ElementorContainerSettings['align_items'] {
-  const map: Record<string, ElementorContainerSettings['align_items']> = {
-    MIN: 'flex-start',
-    CENTER: 'center',
-    MAX: 'flex-end',
-    BASELINE: 'baseline',
+  value: "MIN" | "CENTER" | "MAX" | "BASELINE",
+): ElementorContainerSettings["align_items"] {
+  const map: Record<string, ElementorContainerSettings["align_items"]> = {
+    MIN: "flex-start",
+    CENTER: "center",
+    MAX: "flex-end",
+    BASELINE: "baseline",
   };
-  return map[value] ?? 'flex-start';
+  return map[value] ?? "flex-start";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,12 +89,18 @@ function mapCounterAlign(
  *
  * Returns: 'row' | 'wrap' | 'column'
  */
-export function inferDirectionFromChildren(
-  children: readonly SceneNode[]
-): { direction: 'row' | 'column'; isWrap: boolean; gap: number; gapColumn: number; gridColumns: number } {
+export function inferDirectionFromChildren(children: readonly SceneNode[]): {
+  direction: "row" | "column";
+  isWrap: boolean;
+  gap: number;
+  gapColumn: number;
+  gridColumns: number;
+} {
   const visible = children.filter((c) => c.visible !== false);
-  if (visible.length === 0) return { direction: 'column', isWrap: false, gap: 0, gapColumn: 0, gridColumns: 1 };
-  if (visible.length === 1) return { direction: 'column', isWrap: false, gap: 0, gapColumn: 0, gridColumns: 1 };
+  if (visible.length === 0)
+    return { direction: "column", isWrap: false, gap: 0, gapColumn: 0, gridColumns: 1 };
+  if (visible.length === 1)
+    return { direction: "column", isWrap: false, gap: 0, gapColumn: 0, gridColumns: 1 };
 
   // Check if children share similar Y values → they are in the same row
   const ys = visible.map((c) => c.y);
@@ -109,7 +121,13 @@ export function inferDirectionFromChildren(
       gaps.push(sorted[i].x - (prev.x + prev.width));
     }
     const avgGap = gaps.length > 0 ? Math.round(gaps.reduce((s, g) => s + g, 0) / gaps.length) : 0;
-    return { direction: 'row', isWrap: false, gap: Math.max(0, avgGap), gapColumn: 0, gridColumns: visible.length };
+    return {
+      direction: "row",
+      isWrap: false,
+      gap: Math.max(0, avgGap),
+      gapColumn: 0,
+      gridColumns: visible.length,
+    };
   }
 
   // Multiple distinct Y rows → check if children form a grid (same width, multiple rows)
@@ -129,9 +147,8 @@ export function inferDirectionFromChildren(
       for (let i = 1; i < firstRow.length; i++) {
         colGaps.push(firstRow[i].x - (firstRow[i - 1].x + firstRow[i - 1].width));
       }
-      const avgColGap = colGaps.length > 0
-        ? Math.round(colGaps.reduce((s, g) => s + g, 0) / colGaps.length)
-        : 0;
+      const avgColGap =
+        colGaps.length > 0 ? Math.round(colGaps.reduce((s, g) => s + g, 0) / colGaps.length) : 0;
 
       // Row gap: distance between the bottom of row 0 and top of row 1
       const row0Bottom = Math.max(...rows[0].map((c) => c.y + c.height));
@@ -139,7 +156,13 @@ export function inferDirectionFromChildren(
       const rowGap = Math.max(0, row1Top - row0Bottom);
 
       const gridColumns = Math.max(...rows.map((r) => r.length));
-      return { direction: 'row', isWrap: true, gap: Math.max(0, avgColGap), gapColumn: rowGap, gridColumns };
+      return {
+        direction: "row",
+        isWrap: true,
+        gap: Math.max(0, avgColGap),
+        gapColumn: rowGap,
+        gridColumns,
+      };
     }
   }
 
@@ -150,11 +173,16 @@ export function inferDirectionFromChildren(
     const prev = sorted[i - 1];
     vGaps.push(sorted[i].y - (prev.y + prev.height));
   }
-  const avgVGap = vGaps.length > 0
-    ? Math.round(vGaps.reduce((s, g) => s + g, 0) / vGaps.length)
-    : 0;
+  const avgVGap =
+    vGaps.length > 0 ? Math.round(vGaps.reduce((s, g) => s + g, 0) / vGaps.length) : 0;
 
-  return { direction: 'column', isWrap: false, gap: Math.max(0, avgVGap), gapColumn: 0, gridColumns: 1 };
+  return {
+    direction: "column",
+    isWrap: false,
+    gap: Math.max(0, avgVGap),
+    gapColumn: 0,
+    gridColumns: 1,
+  };
 }
 
 /**
@@ -185,9 +213,9 @@ function countWrapColumns(children: readonly SceneNode[]): number {
  *                        is a child-level property, not the frame's own.
  */
 export function analyseLayout(node: LayoutFrame, childLayoutGrow = 0): LayoutAnalysis {
-  const isAutoLayout = node.layoutMode !== 'NONE';
+  const isAutoLayout = node.layoutMode !== "NONE";
 
-  let direction: LayoutAnalysis['direction'];
+  let direction: LayoutAnalysis["direction"];
   let isWrap: boolean;
   let gap: number;
   let gapColumn: number;
@@ -195,20 +223,18 @@ export function analyseLayout(node: LayoutFrame, childLayoutGrow = 0): LayoutAna
 
   if (isAutoLayout) {
     direction =
-      node.layoutMode === 'HORIZONTAL' ? 'row' :
-      node.layoutMode === 'VERTICAL'   ? 'column' : 'none';
+      node.layoutMode === "HORIZONTAL" ? "row" : node.layoutMode === "VERTICAL" ? "column" : "none";
 
-    isWrap = 'layoutWrap' in node && node.layoutWrap === 'WRAP';
+    isWrap = "layoutWrap" in node && node.layoutWrap === "WRAP";
     gap = node.itemSpacing ?? 0;
-    gapColumn = isWrap && 'counterAxisSpacing' in node
-      ? ((node as FrameNode).counterAxisSpacing ?? gap)
-      : gap;
-    gridColumns = isWrap && 'children' in node
-      ? countWrapColumns((node as FrameNode).children)
-      : 1;
+    gapColumn =
+      isWrap && "counterAxisSpacing" in node
+        ? ((node as FrameNode).counterAxisSpacing ?? gap)
+        : gap;
+    gridColumns = isWrap && "children" in node ? countWrapColumns((node as FrameNode).children) : 1;
   } else {
     // No auto-layout — infer from child positions
-    const children = 'children' in node ? (node as FrameNode).children : [];
+    const children = "children" in node ? (node as FrameNode).children : [];
     const inferred = inferDirectionFromChildren(children);
     direction = inferred.direction;
     isWrap = inferred.isWrap;
@@ -220,31 +246,36 @@ export function analyseLayout(node: LayoutFrame, childLayoutGrow = 0): LayoutAna
   // Treat wrap rows as a CSS grid when we have ≥2 columns — grid handles
   // gap math deterministically, whereas flex-wrap + % widths overflows and
   // collapses the rows to a single column.
-  const isGrid = isWrap && direction === 'row' && gridColumns >= 2;
+  const isGrid = isWrap && direction === "row" && gridColumns >= 2;
 
   // Padding
-  const paddingTop    = node.paddingTop ?? 0;
-  const paddingRight  = node.paddingRight ?? 0;
+  const paddingTop = node.paddingTop ?? 0;
+  const paddingRight = node.paddingRight ?? 0;
   const paddingBottom = node.paddingBottom ?? 0;
-  const paddingLeft   = node.paddingLeft ?? 0;
+  const paddingLeft = node.paddingLeft ?? 0;
 
   // Alignment (only meaningful for auto-layout, but record anyway)
-  const primaryAxisAlignFigma  = node.primaryAxisAlignItems ?? 'MIN';
-  const counterAxisAlignFigma  = node.counterAxisAlignItems ?? 'MIN';
-  const primaryAxisAlign = mapPrimaryAlign(primaryAxisAlignFigma as 'MIN' | 'CENTER' | 'MAX' | 'SPACE_BETWEEN');
-  const crossAxisAlign   = mapCounterAlign(counterAxisAlignFigma as 'MIN' | 'CENTER' | 'MAX' | 'BASELINE');
+  const primaryAxisAlignFigma = node.primaryAxisAlignItems ?? "MIN";
+  const counterAxisAlignFigma = node.counterAxisAlignItems ?? "MIN";
+  const primaryAxisAlign = mapPrimaryAlign(
+    primaryAxisAlignFigma as "MIN" | "CENTER" | "MAX" | "SPACE_BETWEEN",
+  );
+  const crossAxisAlign = mapCounterAlign(
+    counterAxisAlignFigma as "MIN" | "CENTER" | "MAX" | "BASELINE",
+  );
 
   // Sizing behaviour
-  const hSizing = 'layoutSizingHorizontal' in node
-    ? (node as FrameNode).layoutSizingHorizontal : undefined;
+  const hSizing =
+    "layoutSizingHorizontal" in node ? (node as FrameNode).layoutSizingHorizontal : undefined;
 
   // isFill: child fills its parent's main axis
-  const isFill = childLayoutGrow === 1 || hSizing === 'FILL';
+  const isFill = childLayoutGrow === 1 || hSizing === "FILL";
 
   // isHugging: shrinks to fit its own content
-  const primarySizing = node.primaryAxisSizingMode ?? 'FIXED';
-  const counterSizing = node.counterAxisSizingMode ?? 'FIXED';
-  const isHugging = !isFill && (hSizing === 'HUG' || primarySizing === 'AUTO' || counterSizing === 'AUTO');
+  const primarySizing = node.primaryAxisSizingMode ?? "FIXED";
+  const counterSizing = node.counterAxisSizingMode ?? "FIXED";
+  const isHugging =
+    !isFill && (hSizing === "HUG" || primarySizing === "AUTO" || counterSizing === "AUTO");
 
   return {
     isAutoLayout,
@@ -259,7 +290,7 @@ export function analyseLayout(node: LayoutFrame, childLayoutGrow = 0): LayoutAna
     paddingBottom,
     paddingLeft,
     primaryAxisAlign,
-    crossAxisAlign: crossAxisAlign as 'flex-start' | 'center' | 'flex-end' | 'stretch',
+    crossAxisAlign: crossAxisAlign as "flex-start" | "center" | "flex-end" | "stretch",
     width: node.width,
     height: node.height,
     isFull: false,
@@ -273,34 +304,35 @@ export function analyseLayout(node: LayoutFrame, childLayoutGrow = 0): LayoutAna
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** Infer a semantic HTML tag from a layer name */
-export function inferHtmlTag(name: string): ElementorContainerSettings['html_tag'] {
+export function inferHtmlTag(name: string): ElementorContainerSettings["html_tag"] {
   const lower = name.toLowerCase();
-  if (lower.includes('header') || lower.includes('nav')) return 'header';
-  if (lower.includes('footer')) return 'footer';
-  if (lower.includes('hero') || lower.includes('section')) return 'section';
-  if (lower.includes('main') || lower.includes('content')) return 'main';
-  if (lower.includes('aside') || lower.includes('sidebar')) return 'aside';
-  if (lower.includes('article') || lower.includes('post') || lower.includes('card')) return 'article';
-  return 'div';
+  if (lower.includes("header") || lower.includes("nav")) return "header";
+  if (lower.includes("footer")) return "footer";
+  if (lower.includes("hero") || lower.includes("section")) return "section";
+  if (lower.includes("main") || lower.includes("content")) return "main";
+  if (lower.includes("aside") || lower.includes("sidebar")) return "aside";
+  if (lower.includes("article") || lower.includes("post") || lower.includes("card"))
+    return "article";
+  return "div";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Container Settings Builder
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Spacings/radii in this module are emitted as rem for accessibility.
-// See units.ts for the convention.
+// Padding is emitted as px so values match Figma exactly regardless of the
+// WordPress theme's root font-size (themes often set 62.5% = 10px base).
 function makeSpacing(t: number, r: number, b: number, l: number): ElementorSpacing {
-  return remSpacing(t, r, b, l);
+  return pxSpacing(t, r, b, l);
 }
 
-function makeSize(size: number, unit: ElementorSize['unit'] = 'px'): ElementorSize {
+function makeSize(size: number, unit: ElementorSize["unit"] = "px"): ElementorSize {
   return { unit, size: Math.round(size) };
 }
 
-/** Shorthand: a gap/size in rem. */
-function remGap(px: number): ElementorSize {
-  return pxToRemSize(px);
+/** Gap as px — Elementor renders gap verbatim, px matches Figma exactly. */
+function pxGap(px: number): ElementorSize {
+  return { unit: "px", size: Math.round(px) };
 }
 
 /**
@@ -331,7 +363,7 @@ export function buildContainerSettings(
   bgFill?: AnalysedFill,
   parentIsGrid = false,
   parentHas12Grid = false,
-  isFullBleedBreakout = false
+  isFullBleedBreakout = false,
 ): ElementorContainerSettings {
   const settings: ElementorContainerSettings = {};
 
@@ -339,52 +371,50 @@ export function buildContainerSettings(
   // Use inferred direction even for non-auto-layout frames (from analyseLayout)
   if (layout.isGrid) {
     // CSS Grid — deterministic column/gap handling, unlike flex-wrap.
-    settings.container_type = 'grid';
-    settings.grid_columns_grid = { unit: 'fr', size: layout.gridColumns, sizes: [] };
-    settings.grid_rows_grid = { unit: 'fr', size: 1, sizes: [] };
+    settings.container_type = "grid";
+    settings.grid_columns_grid = { unit: "fr", size: layout.gridColumns, sizes: [] };
+    settings.grid_rows_grid = { unit: "fr", size: 1, sizes: [] };
     const colGap = layout.gap;
     const rowGap = layout.gapColumn || layout.gap;
     settings.grid_gaps = {
-      column: colGap / REM_ROOT,
-      row: rowGap / REM_ROOT,
+      column: Math.round(colGap),
+      row: Math.round(rowGap),
       isLinked: colGap === rowGap,
-      unit: 'rem',
-      size: colGap / REM_ROOT,
+      unit: "px",
+      size: Math.round(colGap),
     };
-    settings.grid_auto_flow = 'row';
+    settings.grid_auto_flow = "row";
     // Responsive: collapse to 2 cols on tablet, 1 on mobile
     const tabletCols = Math.max(1, Math.min(layout.gridColumns, 2));
-    settings.grid_columns_grid_tablet = { unit: 'fr', size: tabletCols, sizes: [] };
-    settings.grid_columns_grid_mobile = { unit: 'fr', size: 1, sizes: [] };
+    settings.grid_columns_grid_tablet = { unit: "fr", size: tabletCols, sizes: [] };
+    settings.grid_columns_grid_mobile = { unit: "fr", size: 1, sizes: [] };
     settings.justify_content = layout.primaryAxisAlign;
     settings.align_items = layout.crossAxisAlign;
-  } else if (layout.direction === 'row') {
-    settings.flex_direction = 'row';
-    settings.flex_wrap = layout.isWrap ? 'wrap' : 'nowrap';
+  } else if (layout.direction === "row") {
+    settings.flex_direction = "row";
+    settings.flex_wrap = layout.isWrap ? "wrap" : "nowrap";
     settings.justify_content = layout.primaryAxisAlign;
     settings.align_items = layout.crossAxisAlign;
     if (layout.gap > 0) {
-      settings.flex_gap = remGap(layout.gap);
-      settings.elements_gap = remGap(layout.gap);
-      settings.gap = remGap(layout.gap);
+      settings.flex_gap = pxGap(layout.gap);
+      settings.elements_gap = pxGap(layout.gap);
     }
     if (layout.isWrap && layout.gapColumn !== layout.gap) {
-      settings.flex_gap_column = remGap(layout.gapColumn);
+      settings.flex_gap_column = pxGap(layout.gapColumn);
     }
-  } else if (layout.direction === 'column') {
-    settings.flex_direction = 'column';
+  } else if (layout.direction === "column") {
+    settings.flex_direction = "column";
     if (layout.isAutoLayout) {
       settings.justify_content = layout.primaryAxisAlign;
       settings.align_items = layout.crossAxisAlign;
       if (layout.gap > 0) {
-        settings.flex_gap = remGap(layout.gap);
-        settings.elements_gap = remGap(layout.gap);
-        settings.gap = remGap(layout.gap);
+        settings.flex_gap = pxGap(layout.gap);
+        settings.elements_gap = pxGap(layout.gap);
       }
     }
   } else {
     // direction === 'none' (rare fallback)
-    settings.flex_direction = 'column';
+    settings.flex_direction = "column";
   }
 
   // ── Padding ────────────────────────────────────────────────────────────────
@@ -392,99 +422,103 @@ export function buildContainerSettings(
     layout.paddingTop + layout.paddingRight + layout.paddingBottom + layout.paddingLeft > 0;
   if (hasPadding) {
     settings.padding = makeSpacing(
-      layout.paddingTop, layout.paddingRight, layout.paddingBottom, layout.paddingLeft
+      layout.paddingTop,
+      layout.paddingRight,
+      layout.paddingBottom,
+      layout.paddingLeft,
     );
     settings.padding_tablet = makeSpacing(
       Math.round(layout.paddingTop * 0.75),
       Math.round(layout.paddingRight * 0.75),
       Math.round(layout.paddingBottom * 0.75),
-      Math.round(layout.paddingLeft * 0.75)
+      Math.round(layout.paddingLeft * 0.75),
     );
     settings.padding_mobile = makeSpacing(
       Math.min(layout.paddingTop, 20),
       Math.min(layout.paddingRight, 16),
       Math.min(layout.paddingBottom, 20),
-      Math.min(layout.paddingLeft, 16)
+      Math.min(layout.paddingLeft, 16),
     );
   }
 
   // ── Background ─────────────────────────────────────────────────────────────
-  if (bgFill && bgFill.type === 'gradient' && bgFill.colorStop && bgFill.colorStop.length >= 2) {
-    settings.background_background = 'gradient';
-    settings.background_gradient_type = bgFill.gradientAngle !== undefined ? 'linear' : 'radial';
+  if (bgFill && bgFill.type === "gradient" && bgFill.colorStop && bgFill.colorStop.length >= 2) {
+    settings.background_background = "gradient";
+    settings.background_gradient_type = bgFill.gradientAngle !== undefined ? "linear" : "radial";
     settings.background_color = bgFill.colorStop[0];
     settings.background_color_b = bgFill.colorStop[bgFill.colorStop.length - 1];
-    settings.background_gradient_angle = makeSize(bgFill.gradientAngle ?? 135, 'deg' as ElementorSize['unit']);
-    settings.background_color_stop = makeSize(0, '%');
-    settings.background_color_b_stop = makeSize(100, '%');
-  } else if (bgColor && bgColor !== 'transparent') {
-    settings.background_background = 'classic';
+    settings.background_gradient_angle = makeSize(
+      bgFill.gradientAngle ?? 135,
+      "deg" as ElementorSize["unit"],
+    );
+    settings.background_color_stop = makeSize(0, "%");
+    settings.background_color_b_stop = makeSize(100, "%");
+  } else if (bgColor && bgColor !== "transparent") {
+    settings.background_background = "classic";
     settings.background_color = bgColor;
   }
 
   // ── Width / Content Width ──────────────────────────────────────────────────
   if (isTopLevel) {
     // Top-level section → full canvas width
-    settings.content_width = 'full';
-    settings.width = makeSize(100, '%');
-    settings.width_tablet = makeSize(100, '%');
-    settings.width_mobile = makeSize(100, '%');
+    settings.content_width = "full";
+    settings.width = makeSize(100, "%");
+    settings.width_tablet = makeSize(100, "%");
+    settings.width_mobile = makeSize(100, "%");
   } else if (isFullBleedBreakout) {
     // Child spans the full parent width and is explicitly breaking out of the
     // 12-col grid — emit full-bleed width.
-    settings.content_width = 'full';
-    settings._element_width = 'initial';
-    settings._element_custom_width = makeSize(100, '%');
-    settings.width = makeSize(100, '%');
-    settings.width_tablet = makeSize(100, '%');
-    settings.width_mobile = makeSize(100, '%');
+    settings.content_width = "full";
+    settings._element_width = "initial";
+    settings._element_custom_width = makeSize(100, "%");
+    settings.width = makeSize(100, "%");
+    settings.width_tablet = makeSize(100, "%");
+    settings.width_mobile = makeSize(100, "%");
   } else if (parentHas12Grid) {
-    // Inside the 12-col grid: keep the child boxed within the grid's content
-    // band. Use its fractional share of the parent (expressed in %) so it
-    // lines up with the grid columns at any viewport.
-    settings.content_width = 'boxed';
+    // Inside the 12-col grid: keep the child within the grid's content band.
+    settings.content_width = "full";
     if (parentWidth > 0) {
       const pct = Math.min(Math.max(Math.round((layout.width / parentWidth) * 100), 5), 100);
-      settings._element_width = 'initial';
-      settings._element_custom_width = makeSize(pct, '%');
+      settings._element_width = "initial";
+      settings._element_custom_width = makeSize(pct, "%");
     } else {
-      settings._element_width = 'initial';
-      settings._element_custom_width = pxToRemSize(layout.width);
+      settings._element_width = "initial";
+      settings._element_custom_width = makeSize(layout.width, "px");
     }
-    settings.width_tablet = makeSize(100, '%');
-    settings.width_mobile = makeSize(100, '%');
+    settings.width_tablet = makeSize(100, "%");
+    settings.width_mobile = makeSize(100, "%");
   } else if (parentIsGrid) {
     // Grid cell already has its width; stretch the child to fill it.
-    settings._element_width = 'initial';
-    settings._element_custom_width = makeSize(100, '%');
+    settings.content_width = "full";
+    settings._element_width = "initial";
+    settings._element_custom_width = makeSize(100, "%");
   } else if (layout.isFill && !parentIsRow) {
-    // Fills horizontal space.
-    // If parent is a column, 100% is correct.
-    // If parent is a row, forcing 100% width breaks wrapping grids,
-    // so we fall through to the computed % calculation below.
-    settings._element_width = 'initial';
-    settings._element_custom_width = makeSize(100, '%');
+    // Fills horizontal space in a column parent → 100%.
+    settings.content_width = "full";
+    settings._element_width = "initial";
+    settings._element_custom_width = makeSize(100, "%");
   } else if (layout.isHugging) {
     // Shrink to content
-    settings._element_width = 'auto';
+    settings.content_width = "full";
+    settings._element_width = "auto";
   } else {
     // Fixed size.
-    // When the parent is a ROW, express width as % so flex columns work at
-    // any viewport size and Elementor's flex model places them side by side.
-    // When the parent is a COLUMN, rem so the layout scales with user zoom.
+    // ROW parent → % so siblings sit side-by-side at any viewport width.
+    // COLUMN parent → px (exact Figma value, no rem ambiguity).
+    settings.content_width = "full";
     if (parentIsRow && parentWidth > 0) {
       const pct = (layout.width / parentWidth) * 100;
       const safePct = Math.min(Math.max(Math.round(pct), 5), 100);
-      settings._element_width = 'initial';
-      settings._element_custom_width = makeSize(safePct, '%');
+      settings._element_width = "initial";
+      settings._element_custom_width = makeSize(safePct, "%");
     } else {
-      settings._element_width = 'initial';
-      settings._element_custom_width = pxToRemSize(layout.width);
+      settings._element_width = "initial";
+      settings._element_custom_width = makeSize(layout.width, "px");
     }
   }
 
   // ── HTML tag placeholder (overwritten by traversal after this call) ────────
-  settings.html_tag = 'div';
+  settings.html_tag = "div";
 
   return settings;
 }
@@ -496,7 +530,7 @@ export function buildContainerSettings(
 export function isTopLevelSection(
   node: SceneNode,
   rootWidth: number,
-  opts: ConversionOptions
+  opts: ConversionOptions,
 ): boolean {
   const widthRatio = node.width / rootWidth;
   return widthRatio >= 0.9; // 90%+ of the root width = full-width section
@@ -506,11 +540,14 @@ export function isTopLevelSection(
  * Build responsive width settings for inner containers inside a section.
  * Returns a boxed container capped at containerMaxWidth.
  */
-export function buildBoxedInnerSettings(opts: ConversionOptions): Partial<ElementorContainerSettings> {
+export function buildBoxedInnerSettings(
+  opts: ConversionOptions,
+): Partial<ElementorContainerSettings> {
   return {
-    content_width: 'boxed',
-    width: pxToRemSize(opts.containerMaxWidth),
-    width_tablet: { unit: '%', size: 100 },
-    width_mobile: { unit: '%', size: 100 },
+    content_width: "full",
+    _element_width: "initial",
+    _element_custom_width: makeSize(opts.containerMaxWidth, "px"),
+    width_tablet: { unit: "%", size: 100 },
+    width_mobile: { unit: "%", size: 100 },
   };
 }

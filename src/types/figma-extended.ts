@@ -53,8 +53,8 @@ export interface FigmaRGBA extends FigmaRGB {
 
 /** Analysed fill from a Figma node */
 export interface AnalysedFill {
-  type: 'solid' | 'image' | 'gradient' | 'unsupported';
-  color?: string;        // hex or rgba string
+  type: "solid" | "image" | "gradient" | "unsupported";
+  color?: string; // hex or rgba string
   colorStop?: [string, string]; // [from, to] for gradients
   gradientAngle?: number;
   imageRef?: string;
@@ -65,12 +65,12 @@ export interface AnalysedFill {
 export interface AnalysedStroke {
   color: string;
   weight: number;
-  position: 'inside' | 'outside' | 'center';
+  position: "inside" | "outside" | "center";
 }
 
 /** Analysed shadow effect */
 export interface AnalysedShadow {
-  type: 'drop' | 'inner';
+  type: "drop" | "inner";
   x: number;
   y: number;
   blur: number;
@@ -81,7 +81,7 @@ export interface AnalysedShadow {
 /** Result of layout analysis on a frame */
 export interface LayoutAnalysis {
   isAutoLayout: boolean;
-  direction: 'row' | 'column' | 'none';
+  direction: "row" | "column" | "none";
   isWrap: boolean;
   /** True when the frame should render as a CSS grid (wrap w/ uniform rows). */
   isGrid: boolean;
@@ -93,8 +93,8 @@ export interface LayoutAnalysis {
   paddingRight: number;
   paddingBottom: number;
   paddingLeft: number;
-  primaryAxisAlign: 'flex-start' | 'center' | 'flex-end' | 'space-between';
-  crossAxisAlign: 'flex-start' | 'center' | 'flex-end' | 'stretch';
+  primaryAxisAlign: "flex-start" | "center" | "flex-end" | "space-between";
+  crossAxisAlign: "flex-start" | "center" | "flex-end" | "stretch";
   width: number;
   height: number;
   isFull: boolean;
@@ -111,17 +111,17 @@ export interface TextAnalysis {
   fontStyle: string;
   lineHeight: number | null;
   letterSpacing: number;
-  textAlign: 'left' | 'center' | 'right' | 'justify';
+  textAlign: "left" | "center" | "right" | "justify";
   color: string;
-  textDecoration: 'none' | 'underline' | 'line-through';
-  textTransform: 'none' | 'uppercase' | 'lowercase';
+  textDecoration: "none" | "underline" | "line-through";
+  textTransform: "none" | "uppercase" | "lowercase";
   isMixedStyles: boolean;
-  inferredLevel: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'body';
+  inferredLevel: "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "body";
 }
 
 /** Pre-flight check result for a single issue */
 export interface PreflightIssue {
-  severity: 'error' | 'warning' | 'info';
+  severity: "error" | "warning" | "info";
   code: string;
   title: string;
   description: string;
@@ -131,8 +131,8 @@ export interface PreflightIssue {
 
 /** Pre-flight report for the whole selection */
 export interface PreflightReport {
-  score: number;          // 0–100
-  grade: 'A' | 'B' | 'C' | 'D' | 'F';
+  score: number; // 0–100
+  grade: "A" | "B" | "C" | "D" | "F";
   issues: PreflightIssue[];
   totalNodes: number;
   autoLayoutNodes: number;
@@ -144,40 +144,43 @@ export interface PreflightReport {
 
 /** Message types from UI → plugin code */
 export type UIMessage =
-  | { type: 'analyze'; nodeId?: string; options?: ConversionOptions }
-  | { type: 'convert'; nodeId?: string; options: ConversionOptions }
-  | { type: 'export-images'; nodeIds: string[] }
-  | { type: 'select-nodes'; nodeIds: string[] }
-  | { type: 'fix-issue'; code: string; nodeIds: string[]; options?: ConversionOptions }
-  | { type: 'cancel' }
-  | { type: 'resize'; width: number; height: number }
-  | { type: 'save-settings'; settings: any }
-  | { type: 'load-settings' };
+  | { type: "analyze"; nodeId?: string; options?: ConversionOptions }
+  | { type: "convert"; nodeId?: string; options: ConversionOptions }
+  | { type: "export-images"; nodeIds: string[] }
+  | { type: "select-nodes"; nodeIds: string[] }
+  | { type: "fix-issue"; code: string; nodeIds: string[]; options?: ConversionOptions }
+  | { type: "cancel" }
+  | { type: "resize"; width: number; height: number }
+  | { type: "save-settings"; settings: any }
+  | { type: "load-settings" };
 
 /** Message types from plugin code → UI */
 export type PluginMessage =
-  | { type: 'selection-changed'; hasSelection: boolean; nodeName?: string; nodeId?: string }
-  | { type: 'preflight-result'; report: PreflightReport }
-  | { type: 'conversion-progress'; step: string; percent: number }
-  | { type: 'conversion-complete'; json: string; flaggedCount: number; fidelityScore: number }
-  | { type: 'conversion-error'; error: string }
-  | { type: 'images-exported'; images: Array<{ nodeId: string; filename: string; data: Uint8Array }> }
-  | { type: 'load-settings'; settings: any }
-  | { type: 'fix-result'; fixed: number; code: string; report: PreflightReport }
-  | { type: 'log'; message: string; level: 'info' | 'warn' | 'error' };
+  | { type: "selection-changed"; hasSelection: boolean; nodeName?: string; nodeId?: string }
+  | { type: "preflight-result"; report: PreflightReport }
+  | { type: "conversion-progress"; step: string; percent: number }
+  | { type: "conversion-complete"; json: string; flaggedCount: number; fidelityScore: number }
+  | { type: "conversion-error"; error: string }
+  | {
+      type: "images-exported";
+      images: Array<{ nodeId: string; filename: string; data: Uint8Array }>;
+    }
+  | { type: "load-settings"; settings: any }
+  | { type: "fix-result"; fixed: number; code: string; report: PreflightReport }
+  | { type: "log"; message: string; level: "info" | "warn" | "error" };
 
 /** Conversion options passed from UI */
 export interface ConversionOptions {
-  maxDepth: number;               // max nesting depth before collapsing (default: 12)
-  containerMaxWidth: number;      // max width for boxed containers in px (default: 1200)
-  exportImages: boolean;          // whether to export image assets
-  imageFormat: 'PNG' | 'WEBP';
+  maxDepth: number; // max nesting depth before collapsing (default: 12)
+  containerMaxWidth: number; // max width for boxed containers in px (default: 1200)
+  exportImages: boolean; // whether to export image assets
+  imageFormat: "PNG" | "WEBP";
   imageScale: 1 | 2 | 3;
-  inferHeadings: boolean;         // detect h1–h6 from font size heuristics
-  useGlobalColors: boolean;       // extract Figma color styles as Elementor global colors
-  useGlobalFonts: boolean;        // extract Figma text styles as Elementor global fonts
-  includeProWidgets: boolean;     // allow Elementor Pro widget mappings
-  mobileBreakpoint: number;       // px (default: 767)
-  tabletBreakpoint: number;       // px (default: 1024)
+  inferHeadings: boolean; // detect h1–h6 from font size heuristics
+  useGlobalColors: boolean; // extract Figma color styles as Elementor global colors
+  useGlobalFonts: boolean; // extract Figma text styles as Elementor global fonts
+  includeProWidgets: boolean; // allow Elementor Pro widget mappings
+  mobileBreakpoint: number; // px (default: 767)
+  tabletBreakpoint: number; // px (default: 1024)
   skipHeaderFooter?: boolean;
 }

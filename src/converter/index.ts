@@ -2,16 +2,16 @@
 // index.ts — Conversion orchestrator. Wires together all converter modules.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { ConversionOptions } from '../types/figma-extended';
-import { ElementorTemplate } from '../types/elementor';
-import { runPreflight } from './preflight';
-import { convertRoot } from './traversal';
-import { buildTemplate, serializeTemplate, validateTemplate, countElements } from './json-builder';
-import { extractGlobalColors } from './colors';
-import { extractGlobalFonts } from './typography';
-import { resetFlags, getFlaggedItems, computeFidelityScore } from './unsupported';
-import { resetAssets, getAssetManifest, executeImageExports } from './assets';
-import { resetWidgetCounter, makeWidgetId } from './widgets';
+import { ConversionOptions } from "../types/figma-extended";
+import { ElementorTemplate } from "../types/elementor";
+import { runPreflight } from "./preflight";
+import { convertRoot } from "./traversal";
+import { buildTemplate, serializeTemplate, validateTemplate, countElements } from "./json-builder";
+import { extractGlobalColors } from "./colors";
+import { extractGlobalFonts } from "./typography";
+import { resetFlags, getFlaggedItems, computeFidelityScore } from "./unsupported";
+import { resetAssets, getAssetManifest, executeImageExports } from "./assets";
+import { resetWidgetCounter, makeWidgetId } from "./widgets";
 
 export type ProgressCallback = (step: string, percent: number) => void;
 
@@ -19,7 +19,7 @@ export const DEFAULT_OPTIONS: ConversionOptions = {
   maxDepth: 12,
   containerMaxWidth: 1200,
   exportImages: true,
-  imageFormat: 'PNG',
+  imageFormat: "PNG",
   imageScale: 2,
   inferHeadings: true,
   useGlobalColors: true,
@@ -54,9 +54,8 @@ export async function runConversion(
   node: FrameNode | ComponentNode,
   opts: ConversionOptions = DEFAULT_OPTIONS,
   onProgress?: ProgressCallback,
-  fileKey = ''
+  fileKey = "",
 ): Promise<ConversionResult> {
-
   const progress = onProgress ?? (() => {});
 
   // ── Reset all module state ─────────────────────────────────────────────
@@ -65,16 +64,16 @@ export async function runConversion(
   resetWidgetCounter();
 
   // ── Step 1: Global tokens ──────────────────────────────────────────────
-  progress('Extracting global colors and fonts…', 10);
+  progress("Extracting global colors and fonts…", 10);
   const globalColors = opts.useGlobalColors ? await extractGlobalColors() : [];
   const globalFonts = opts.useGlobalFonts ? await extractGlobalFonts() : [];
 
   // ── Step 2: Tree traversal ────────────────────────────────────────────
-  progress('Traversing and converting design tree…', 30);
+  progress("Traversing and converting design tree…", 30);
   const content = convertRoot(node, opts);
 
   // ── Step 3: Flagged items + score ─────────────────────────────────────
-  progress('Computing fidelity score…', 60);
+  progress("Computing fidelity score…", 60);
   const flaggedItems = getFlaggedItems();
 
   // Count total converted nodes from traversal
@@ -85,7 +84,7 @@ export async function runConversion(
   const assetManifest = getAssetManifest();
 
   // ── Step 5: Build template ────────────────────────────────────────────
-  progress('Assembling Elementor template…', 75);
+  progress("Assembling Elementor template…", 75);
 
   const template = buildTemplate({
     title: node.name,
@@ -104,7 +103,7 @@ export async function runConversion(
   const warnings = validateTemplate(template);
 
   // ── Step 7: Serialize ─────────────────────────────────────────────────
-  progress('Serializing JSON…', 85);
+  progress("Serializing JSON…", 85);
   const json = serializeTemplate(template);
 
   // ── Step 8: Image exports ─────────────────────────────────────────────
@@ -114,7 +113,7 @@ export async function runConversion(
     imageExports = await executeImageExports(opts);
   }
 
-  progress('Done!', 100);
+  progress("Done!", 100);
 
   return {
     json,

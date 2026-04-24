@@ -3,7 +3,7 @@
 // These represent the exact structure Elementor expects for template import.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type ElementorUnit = 'px' | '%' | 'em' | 'rem' | 'vw' | 'vh' | 'deg';
+export type ElementorUnit = "px" | "%" | "em" | "rem" | "vw" | "vh" | "deg";
 
 export interface ElementorSize {
   unit: ElementorUnit;
@@ -37,32 +37,32 @@ export interface ElementorBoxShadow {
 }
 
 export interface ElementorTypography {
-  typography_typography?: 'custom';
+  typography_typography?: "custom";
   typography_font_family?: string;
   typography_font_size?: ElementorSize;
   typography_font_size_tablet?: ElementorSize;
   typography_font_size_mobile?: ElementorSize;
   typography_font_weight?: string;
-  typography_font_style?: 'normal' | 'italic' | 'oblique';
-  typography_text_transform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
-  typography_text_decoration?: 'none' | 'underline' | 'overline' | 'line-through';
+  typography_font_style?: "normal" | "italic" | "oblique";
+  typography_text_transform?: "none" | "uppercase" | "lowercase" | "capitalize";
+  typography_text_decoration?: "none" | "underline" | "overline" | "line-through";
   typography_line_height?: ElementorSize;
   typography_letter_spacing?: ElementorSize;
 }
 
 export interface ElementorBackgroundClassic {
-  background_background: 'classic';
+  background_background: "classic";
   background_color?: string;
   background_image?: { url: string; id: number };
   background_position?: string;
-  background_repeat?: 'no-repeat' | 'repeat' | 'repeat-x' | 'repeat-y';
-  background_size?: 'auto' | 'cover' | 'contain';
-  background_attachment?: 'scroll' | 'fixed';
+  background_repeat?: "no-repeat" | "repeat" | "repeat-x" | "repeat-y";
+  background_size?: "auto" | "cover" | "contain";
+  background_attachment?: "scroll" | "fixed";
 }
 
 export interface ElementorBackgroundGradient {
-  background_background: 'gradient';
-  background_gradient_type?: 'linear' | 'radial';
+  background_background: "gradient";
+  background_gradient_type?: "linear" | "radial";
   background_gradient_angle?: ElementorSize;
   background_color?: string;
   background_color_b?: string;
@@ -76,27 +76,33 @@ export type ElementorBackground = ElementorBackgroundClassic | ElementorBackgrou
 
 export interface ElementorContainerSettings {
   // Layout
-  flex_direction?: 'row' | 'column' | 'row-reverse' | 'column-reverse';
-  flex_wrap?: 'wrap' | 'nowrap';
+  flex_direction?: "row" | "column" | "row-reverse" | "column-reverse";
+  flex_wrap?: "wrap" | "nowrap";
   flex_gap?: ElementorSize;
   flex_gap_column?: ElementorSize;
   elements_gap?: ElementorSize;
   gap?: ElementorSize;
-  justify_content?: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around' | 'space-evenly';
-  align_items?: 'flex-start' | 'center' | 'flex-end' | 'stretch' | 'baseline';
-  align_content?: 'flex-start' | 'center' | 'flex-end' | 'space-between' | 'space-around';
+  justify_content?:
+    | "flex-start"
+    | "center"
+    | "flex-end"
+    | "space-between"
+    | "space-around"
+    | "space-evenly";
+  align_items?: "flex-start" | "center" | "flex-end" | "stretch" | "baseline";
+  align_content?: "flex-start" | "center" | "flex-end" | "space-between" | "space-around";
 
   // Content width
-  content_width?: 'boxed' | 'full';
+  content_width?: "boxed" | "full";
   width?: ElementorSize;
   width_tablet?: ElementorSize;
   width_mobile?: ElementorSize;
-  height?: 'default' | 'fit' | 'min-height' | 'full';
+  height?: "default" | "fit" | "min-height" | "full";
   min_height?: ElementorSize;
   custom_height?: ElementorSize;
 
   // Self sizing
-  _element_width?: 'auto' | 'initial';
+  _element_width?: "auto" | "initial";
   _element_custom_width?: ElementorSize;
   _element_vertical_align?: string;
 
@@ -122,17 +128,17 @@ export interface ElementorContainerSettings {
   background_color_b_stop?: ElementorSize;
 
   // Border
-  border_border?: 'none' | 'solid' | 'double' | 'dotted' | 'dashed' | 'groove';
+  border_border?: "none" | "solid" | "double" | "dotted" | "dashed" | "groove";
   border_width?: ElementorSpacing;
   border_color?: string;
   border_radius?: ElementorBorderRadius;
 
   // Shadow
-  box_shadow_box_shadow_type?: 'yes' | '';
+  box_shadow_box_shadow_type?: "yes" | "";
   box_shadow_box_shadow?: ElementorBoxShadow;
 
   // Overflow
-  overflow?: 'default' | 'hidden';
+  overflow?: "default" | "hidden";
 
   // Opacity
   opacity?: ElementorSize;
@@ -141,7 +147,7 @@ export interface ElementorContainerSettings {
   z_index?: number;
 
   // HTML tag
-  html_tag?: 'div' | 'header' | 'footer' | 'main' | 'article' | 'section' | 'aside' | 'nav';
+  html_tag?: "div" | "header" | "footer" | "main" | "article" | "section" | "aside" | "nav";
 
   // Responsive visibility
   hide_desktop?: string;
@@ -155,8 +161,8 @@ export interface ElementorContainerSettings {
 
 export interface HeadingSettings extends ElementorTypography {
   title?: string;
-  header_size?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
-  align?: 'left' | 'center' | 'right' | 'justify';
+  header_size?: "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+  align?: "left" | "center" | "right" | "justify";
   title_color?: string;
   link?: { url: string; is_external?: string; nofollow?: string };
   _element_width?: string;
@@ -165,10 +171,10 @@ export interface HeadingSettings extends ElementorTypography {
 
 export interface TextEditorSettings {
   editor?: string; // HTML string
-  align?: 'left' | 'center' | 'right' | 'justify';
+  align?: "left" | "center" | "right" | "justify";
   text_color?: string;
   _element_width?: string;
-  typography_typography?: 'custom';
+  typography_typography?: "custom";
   typography_font_family?: string;
   typography_font_size?: ElementorSize;
   typography_font_size_tablet?: ElementorSize;
@@ -182,18 +188,18 @@ export interface TextEditorSettings {
 export interface ButtonSettings {
   text?: string;
   link?: { url: string; is_external?: string };
-  align?: 'left' | 'center' | 'right' | 'justify';
-  button_type?: 'info' | 'success' | 'warning' | 'danger' | '';
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  align?: "left" | "center" | "right" | "justify";
+  button_type?: "info" | "success" | "warning" | "danger" | "";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   icon?: string;
-  icon_align?: 'left' | 'right';
+  icon_align?: "left" | "right";
   background_color?: string;
   button_text_color?: string;
   border_border?: string;
   border_width?: ElementorSpacing;
   border_color?: string;
   border_radius?: ElementorBorderRadius;
-  typography_typography?: 'custom';
+  typography_typography?: "custom";
   typography_font_size?: ElementorSize;
   typography_font_weight?: string;
   text_padding?: ElementorSpacing;
@@ -207,27 +213,27 @@ export interface ButtonSettings {
 
 export interface ImageSettings {
   image?: { url: string; id: number; alt?: string };
-  image_size?: 'thumbnail' | 'medium' | 'large' | 'full' | 'custom';
+  image_size?: "thumbnail" | "medium" | "large" | "full" | "custom";
   image_custom_dimension?: { width: number; height: number };
-  align?: 'left' | 'center' | 'right';
+  align?: "left" | "center" | "right";
   caption?: string;
-  link_to?: 'none' | 'file' | 'custom';
+  link_to?: "none" | "file" | "custom";
   link?: { url: string };
   width?: ElementorSize;
   height?: ElementorSize;
-  object_fit?: 'fill' | 'cover' | 'contain';
+  object_fit?: "fill" | "cover" | "contain";
   border_radius?: ElementorBorderRadius;
   opacity?: ElementorSize;
-  css_filters_css_filter?: 'normal';
+  css_filters_css_filter?: "normal";
   _element_width?: string;
   [key: string]: unknown;
 }
 
 export interface IconSettings {
   icon?: { value: string; library: string };
-  view?: 'default' | 'stacked' | 'framed';
-  shape?: 'circle' | 'square';
-  align?: 'left' | 'center' | 'right';
+  view?: "default" | "stacked" | "framed";
+  shape?: "circle" | "square";
+  align?: "left" | "center" | "right";
   primary_color?: string;
   secondary_color?: string;
   size?: ElementorSize;
@@ -239,13 +245,13 @@ export interface IconSettings {
 }
 
 export interface DividerSettings {
-  style?: 'solid' | 'double' | 'dotted' | 'dashed';
+  style?: "solid" | "double" | "dotted" | "dashed";
   weight?: ElementorSize;
   color?: string;
   bring_to_front?: string;
   width?: ElementorSize;
-  align?: 'left' | 'center' | 'right';
-  look?: 'line' | 'gap';
+  align?: "left" | "center" | "right";
+  look?: "line" | "gap";
   gap?: ElementorSize;
   _element_width?: string;
   [key: string]: unknown;
@@ -260,17 +266,17 @@ export interface SpacerSettings {
 export interface IconBoxSettings extends ElementorTypography {
   icon?: { value: string; library: string };
   icon_image?: { url: string; id: number };
-  view?: 'default' | 'stacked' | 'framed';
-  shape?: 'circle' | 'square';
+  view?: "default" | "stacked" | "framed";
+  shape?: "circle" | "square";
   icon_size?: ElementorSize;
   icon_color?: string;
   title_text?: string;
   description_text?: string;
-  position?: 'top' | 'left' | 'right';
-  align?: 'left' | 'center' | 'right';
+  position?: "top" | "left" | "right";
+  align?: "left" | "center" | "right";
   title_color?: string;
   description_color?: string;
-  title_size?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+  title_size?: "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
   _element_width?: string;
   [key: string]: unknown;
 }
@@ -280,24 +286,24 @@ export interface ImageBoxSettings extends ElementorTypography {
   image_size?: string;
   title_text?: string;
   description_text?: string;
-  position?: 'top' | 'left' | 'right';
-  align?: 'left' | 'center' | 'right' | 'justify';
+  position?: "top" | "left" | "right";
+  align?: "left" | "center" | "right" | "justify";
   title_color?: string;
   description_color?: string;
-  title_size?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
+  title_size?: "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
   _element_width?: string;
   [key: string]: unknown;
 }
 
 export interface VideoSettings {
-  video_type?: 'youtube' | 'vimeo' | 'hosted';
+  video_type?: "youtube" | "vimeo" | "hosted";
   youtube_url?: string;
   vimeo_url?: string;
   autoplay?: string;
   mute?: string;
   loop?: string;
   controls?: string;
-  aspect_ratio?: '169' | '219' | '43' | '32' | '11' | '916';
+  aspect_ratio?: "169" | "219" | "43" | "32" | "11" | "916";
   image_overlay?: { url: string; id: number };
   show_image_overlay?: string;
   _element_width?: string;
@@ -305,12 +311,12 @@ export interface VideoSettings {
 }
 
 export interface StarRatingSettings {
-  rating_scale?: '5' | '10';
+  rating_scale?: "5" | "10";
   rating?: number;
   star_color?: string;
   unmarked_star_color?: string;
   star_size?: ElementorSize;
-  align?: 'left' | 'center' | 'right' | 'justify';
+  align?: "left" | "center" | "right" | "justify";
   _element_width?: string;
   [key: string]: unknown;
 }
@@ -320,7 +326,7 @@ export interface CounterSettings {
   ending_number?: number;
   duration?: number;
   title?: string;
-  align?: 'left' | 'center' | 'right';
+  align?: "left" | "center" | "right";
   number_color?: string;
   title_color?: string;
   _element_width?: string;
@@ -340,7 +346,7 @@ export interface ProgressBarSettings {
 }
 
 export interface AlertSettings {
-  alert_type?: 'info' | 'success' | 'warning' | 'danger';
+  alert_type?: "info" | "success" | "warning" | "danger";
   alert_title?: string;
   alert_description?: string;
   show_dismiss_button?: string;
@@ -357,12 +363,12 @@ export interface SocialIconsSettings {
     social_icon: { value: string; library: string };
     link: { url: string; is_external: string };
   }>;
-  shape?: 'rounded' | 'square' | 'circle';
+  shape?: "rounded" | "square" | "circle";
   columns?: string;
-  align?: 'left' | 'center' | 'right';
+  align?: "left" | "center" | "right";
   icon_size?: ElementorSize;
   icon_spacing?: ElementorSize;
-  icon_color?: 'default' | 'custom';
+  icon_color?: "default" | "custom";
   icon_primary_color?: string;
   icon_secondary_color?: string;
   _element_width?: string;
@@ -381,8 +387,8 @@ export interface GoogleMapsSettings {
 
 export interface FlipBoxSettings {
   border_radius?: ElementorBorderRadius;
-  flip_effect?: 'flip' | 'slide' | 'push' | 'zoom-in' | 'zoom-out' | 'fade';
-  flip_direction?: 'left' | 'right' | 'up' | 'down';
+  flip_effect?: "flip" | "slide" | "push" | "zoom-in" | "zoom-out" | "fade";
+  flip_direction?: "left" | "right" | "up" | "down";
   front_title_text?: string;
   front_description_text?: string;
   front_background_color?: string;
@@ -403,8 +409,8 @@ export interface CallToActionSettings {
   description?: string;
   button?: string;
   link?: { url: string; is_external: string };
-  layout?: 'classic' | 'cover' | 'image';
-  align?: 'left' | 'center' | 'right';
+  layout?: "classic" | "cover" | "image";
+  align?: "left" | "center" | "right";
   _element_width?: string;
   [key: string]: unknown;
 }
@@ -432,7 +438,7 @@ export interface TestimonialSettings extends ElementorTypography {
   testimonial_image?: { url: string; id: number };
   testimonial_name?: string;
   testimonial_job?: string;
-  testimonial_alignment?: 'left' | 'center' | 'right';
+  testimonial_alignment?: "left" | "center" | "right";
   content_color?: string;
   name_color?: string;
   job_color?: string;
@@ -445,7 +451,7 @@ export interface TabsSettings {
     tab_title: string;
     tab_content: string;
   }>;
-  type?: 'horizontal' | 'vertical';
+  type?: "horizontal" | "vertical";
   tab_active_color?: string;
   tab_color?: string;
   tab_active_background_color?: string;
@@ -474,30 +480,30 @@ export interface AccordionSettings {
 // ── Widget Type Union ────────────────────────────────────────────────────────
 
 export type WidgetType =
-  | 'heading'
-  | 'text-editor'
-  | 'button'
-  | 'image'
-  | 'icon'
-  | 'icon-box'
-  | 'image-box'
-  | 'divider'
-  | 'spacer'
-  | 'video'
-  | 'star-rating'
-  | 'counter'
-  | 'progress'
-  | 'alert'
-  | 'social-icons'
-  | 'google_maps'
-  | 'testimonial'
-  | 'testimonial-carousel'
-  | 'tabs'
-  | 'accordion'
-  | 'flip-box'
-  | 'call-to-action'
-  | 'price-table'
-  | 'image-carousel';
+  | "heading"
+  | "text-editor"
+  | "button"
+  | "image"
+  | "icon"
+  | "icon-box"
+  | "image-box"
+  | "divider"
+  | "spacer"
+  | "video"
+  | "star-rating"
+  | "counter"
+  | "progress"
+  | "alert"
+  | "social-icons"
+  | "google_maps"
+  | "testimonial"
+  | "testimonial-carousel"
+  | "tabs"
+  | "accordion"
+  | "flip-box"
+  | "call-to-action"
+  | "price-table"
+  | "image-carousel";
 
 export type WidgetSettings =
   | HeadingSettings
@@ -528,7 +534,7 @@ export type WidgetSettings =
 
 export interface ElementorWidget {
   id: string;
-  elType: 'widget';
+  elType: "widget";
   widgetType: WidgetType | string;
   settings: WidgetSettings;
   elements: [];
@@ -536,7 +542,7 @@ export interface ElementorWidget {
 
 export interface ElementorContainer {
   id: string;
-  elType: 'container';
+  elType: "container";
   settings: ElementorContainerSettings;
   elements: ElementorElement[];
 }
@@ -548,10 +554,10 @@ export type ElementorElement = ElementorContainer | ElementorWidget;
 export interface FlaggedItem {
   node_id: string;
   node_name: string;
-  category: 'layout' | 'visual-effect' | 'typography' | 'animation' | 'asset' | 'component';
+  category: "layout" | "visual-effect" | "typography" | "animation" | "asset" | "component";
   reason: string;
   nearest_native: string;
-  action: 'manual-review' | 'export-asset';
+  action: "manual-review" | "export-asset";
 }
 
 export interface GlobalColor {
@@ -563,25 +569,25 @@ export interface GlobalColor {
 export interface GlobalFont {
   _id: string;
   title: string;
-  typography_typography: 'custom';
+  typography_typography: "custom";
   typography_font_family: string;
   typography_font_size?: ElementorSize;
   typography_font_weight?: string;
 }
 
 export interface ElementorTemplate {
-  version: '0.4';
+  version: "0.4";
   title: string;
-  type: 'page' | 'section' | 'container';
+  type: "page" | "section" | "container";
   content: ElementorElement[];
   page_settings: {
     margin?: ElementorSpacing;
     padding?: ElementorSpacing;
-    custom_css?: '';
+    custom_css?: "";
   };
   metadata: {
-    generated_by: 'Figma2ElementorNative';
-    plugin_version: '1.0.0';
+    generated_by: "Figma2ElementorNative";
+    plugin_version: "1.0.0";
     figma_file_key: string;
     figma_node_id: string;
     figma_node_name: string;
@@ -598,6 +604,6 @@ export interface AssetManifest {
   node_id: string;
   node_name: string;
   filename: string;
-  format: 'PNG' | 'WEBP' | 'SVG';
+  format: "PNG" | "WEBP" | "SVG";
   placeholder_url: string;
 }

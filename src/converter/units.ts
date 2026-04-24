@@ -7,7 +7,7 @@
 // expressed as %, Figma-native px widths of fixed columns) stay in px.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { ElementorSize, ElementorSpacing, ElementorUnit } from '../types/elementor';
+import { ElementorSize, ElementorSpacing, ElementorUnit } from "../types/elementor";
 
 export const REM_ROOT = 16;
 
@@ -18,12 +18,12 @@ function round3(n: number): number {
 
 /** Convert a px number to an Elementor rem Size. */
 export function pxToRemSize(px: number): ElementorSize {
-  return { unit: 'rem', size: round3(px / REM_ROOT) };
+  return { unit: "rem", size: round3(px / REM_ROOT) };
 }
 
 /** Emit a px Size without any rem conversion — for stroke weights, shadows. */
 export function pxSize(px: number): ElementorSize {
-  return { unit: 'px', size: Math.round(px) };
+  return { unit: "px", size: Math.round(px) };
 }
 
 /** 4-sided spacing in rem (padding / margin). */
@@ -33,7 +33,7 @@ export function remSpacing(t: number, r: number, b: number, l: number): Elemento
     right: String(round3(r / REM_ROOT)),
     bottom: String(round3(b / REM_ROOT)),
     left: String(round3(l / REM_ROOT)),
-    unit: 'rem',
+    unit: "rem",
     isLinked: t === r && r === b && b === l,
   };
 }
@@ -45,7 +45,7 @@ export function pxSpacing(t: number, r: number, b: number, l: number): Elementor
     right: String(Math.round(r)),
     bottom: String(Math.round(b)),
     left: String(Math.round(l)),
-    unit: 'px',
+    unit: "px",
     isLinked: t === r && r === b && b === l,
   };
 }

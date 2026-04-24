@@ -1,1134 +1,1695 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Figma → Elementor Native</title>
-<style>
-/* ── Reset & Base ────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg:        #0f0f13;
-  --surface:   #1a1a22;
-  --surface2:  #23232f;
-  --border:    #2e2e3e;
-  --accent:    #8B5CF6;
-  --accent2:   #6D28D9;
-  --good:      #10B981;
-  --warn:      #F59E0B;
-  --bad:       #EF4444;
-  --info:      #3B82F6;
-  --text:      #e8e8f0;
-  --text2:     #9090a8;
-  --text3:     #5a5a72;
-  --radius:    10px;
-  --radius-sm: 6px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-  font-size: 13px;
-}
-
-html, body {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-}
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── Header ─────────────────────────────────────────────────────────── */
-.header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 16px 10px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-}
-.header > div { flex: 1; min-width: 0; }
-.header-logo {
-  width: 28px; height: 28px;
-  background: linear-gradient(135deg, var(--accent) 0%, #C084FC 100%);
-  border-radius: 7px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px;
-  flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(139,92,246,0.4);
-}
-.header-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: -0.01em;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.header-sub {
-  font-size: 10px;
-  color: var(--text3);
-  margin-top: 1px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.header-badge {
-  margin-left: auto;
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 2px 7px;
-  border-radius: 20px;
-  background: rgba(139,92,246,0.15);
-  color: var(--accent);
-  border: 1px solid rgba(139,92,246,0.25);
-}
-
-/* ── Tab Bar ─────────────────────────────────────────────────────────── */
-.tabs {
-  display: flex;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 0 16px;
-}
-.tab {
-  padding: 8px 12px 7px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--text3);
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.15s;
-  user-select: none;
-  white-space: nowrap;
-}
-.tab:hover { color: var(--text2); }
-.tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
-
-/* ── Tab Panels ─────────────────────────────────────────────────────── */
-.panels { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
-.panel { display: none; flex: 1; min-height: 0; flex-direction: column; overflow: hidden; }
-.panel.active { display: flex; }
-.panel-scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; width: 100%; }
-.panel-scroll > * { flex-shrink: 0; }
-.panel-scroll::-webkit-scrollbar { width: 4px; }
-.panel-scroll::-webkit-scrollbar-track { background: transparent; }
-.panel-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-/* ── Selection Banner ────────────────────────────────────────────────── */
-.selection-banner {
-  display: flex; align-items: center; gap: 8px;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  background: var(--surface2);
-  border: 1px solid var(--border);
-}
-.sel-dot {
-  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-  transition: background 0.2s;
-}
-.sel-dot.ok { background: var(--good); box-shadow: 0 0 6px rgba(16,185,129,0.5); }
-.sel-dot.none { background: var(--text3); }
-.sel-text { font-size: 11.5px; color: var(--text2); min-width: 0; }
-.sel-text strong { color: var(--text); font-weight: 600; }
-.sel-text .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* ── Score Ring ─────────────────────────────────────────────────────── */
-.score-card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  display: flex; align-items: center; gap: 16px;
-}
-.score-ring {
-  width: 64px; height: 64px; flex-shrink: 0;
-  position: relative;
-}
-.score-ring svg { transform: rotate(-90deg); }
-.score-ring-text {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-}
-.score-num { font-size: 18px; font-weight: 800; line-height: 1; }
-.score-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); }
-.score-details { flex: 1; min-width: 0; }
-.score-grade {
-  font-size: 22px; font-weight: 900; line-height: 1;
-  background: linear-gradient(135deg, var(--accent), #C084FC);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  display: inline-block;
-}
-.score-desc { font-size: 11px; color: var(--text2); margin-top: 3px; }
-.score-stats {
-  display: flex; gap: 10px; margin-top: 8px;
-  flex-wrap: wrap;
-}
-.score-stat { font-size: 10px; color: var(--text3); }
-.score-stat span { color: var(--text2); font-weight: 600; }
-
-/* ── Issue List ─────────────────────────────────────────────────────── */
-.section-title {
-  font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.07em; color: var(--text3);
-  margin-bottom: -4px;
-}
-.fix-all-btn {
-  width: 100%; margin-bottom: 8px;
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(16,185,129,0.45);
-  background: rgba(16,185,129,0.1);
-  color: var(--good);
-  font-size: 11px; font-weight: 700; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  transition: background 0.15s;
-}
-.fix-all-btn:hover { background: rgba(16,185,129,0.2); }
-.fix-all-btn:disabled { opacity: 0.4; cursor: default; }
-
-.issue-list { display: flex; flex-direction: column; gap: 8px; }
-.issue-item {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 10px 12px;
-  display: grid; grid-template-columns: auto 1fr; gap: 8px 10px;
-  align-items: start;
-  transition: border-color 0.2s;
-}
-.issue-item.fixed { border-color: rgba(16,185,129,0.4); background: rgba(16,185,129,0.05); }
-.issue-icon { font-size: 14px; margin-top: 1px; }
-.issue-content {}
-.issue-title { font-size: 11.5px; font-weight: 600; color: var(--text); }
-.issue-desc { font-size: 10.5px; color: var(--text2); margin-top: 2px; line-height: 1.4; }
-
-/* Clickable node chips */
-.node-chip {
-  background: var(--surface); border: 1px solid var(--border);
-  color: var(--text2); font-size: 9.5px; padding: 2px 6px;
-  border-radius: 4px; cursor: pointer; display: inline-flex; align-items: center; gap: 3px;
-  transition: border-color 0.15s, color 0.15s;
-}
-.node-chip:hover { border-color: var(--accent); color: var(--accent); }
-.node-chip::before { content: '↗'; font-size: 8px; opacity: 0.7; }
-
-/* Step-by-step guide */
-.issue-guide {
-  margin-top: 8px;
-  background: rgba(59,130,246,0.06);
-  border: 1px solid rgba(59,130,246,0.18);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-.issue-guide-toggle {
-  width: 100%; padding: 6px 10px;
-  display: flex; align-items: center; justify-content: space-between;
-  font-size: 10px; font-weight: 600; color: var(--info);
-  cursor: pointer; background: none; border: none;
-  text-align: left;
-}
-.issue-guide-toggle .arrow { transition: transform 0.2s; font-size: 9px; }
-.issue-guide-toggle.open .arrow { transform: rotate(90deg); }
-.issue-guide-steps {
-  display: none; padding: 0 10px 10px; flex-direction: column; gap: 5px;
-}
-.issue-guide-steps.open { display: flex; }
-.guide-step {
-  display: flex; gap: 8px; align-items: flex-start;
-  font-size: 10px; color: var(--text2); line-height: 1.4;
-}
-.guide-step-num {
-  min-width: 16px; height: 16px;
-  background: rgba(59,130,246,0.2); color: var(--info);
-  border-radius: 50%; font-size: 9px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.issue-fix {
-  font-size: 10px; color: var(--accent); margin-top: 4px;
-  display: flex; align-items: flex-start; gap: 4px;
-}
-.issue-fix::before { content: '→'; flex-shrink: 0; }
-.issue-actions { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
-.issue-fix-btn, .issue-zoom-btn {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 10px; font-weight: 600;
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-.issue-fix-btn {
-  border: 1px solid rgba(16,185,129,0.4);
-  background: rgba(16,185,129,0.1);
-  color: var(--good);
-}
-.issue-fix-btn:hover { background: rgba(16,185,129,0.22); border-color: rgba(16,185,129,0.6); }
-.issue-fix-btn:disabled { opacity: 0.45; cursor: default; }
-.issue-zoom-btn {
-  border: 1px solid rgba(139,92,246,0.35);
-  background: rgba(139,92,246,0.1);
-  color: var(--accent);
-}
-.issue-zoom-btn:hover { background: rgba(139,92,246,0.2); border-color: rgba(139,92,246,0.55); }
-.issue-fixed-badge {
-  display: inline-flex; align-items: center; gap: 4px;
-  font-size: 10px; font-weight: 600; color: var(--good);
-  padding: 4px 10px; border-radius: var(--radius-sm);
-  border: 1px solid rgba(16,185,129,0.3);
-  background: rgba(16,185,129,0.08);
-}
-.issue-item.severity-error { border-color: rgba(239,68,68,0.25); }
-.issue-item.severity-warning { border-color: rgba(245,158,11,0.25); }
-.issue-item.severity-info { border-color: rgba(59,130,246,0.2); }
-
-/* ── Fidelity Score Bar ──────────────────────────────────────────────── */
-.fidelity-bar-wrap { display: flex; flex-direction: column; gap: 5px; }
-.fidelity-bar-header { display: flex; justify-content: space-between; align-items: center; }
-.fidelity-bar-label { font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; }
-.fidelity-bar-value { font-size: 12px; font-weight: 700; }
-.fidelity-bar-bg {
-  height: 6px; background: var(--surface2); border-radius: 3px;
-  overflow: hidden; border: 1px solid var(--border);
-}
-.fidelity-bar-fill {
-  height: 100%; border-radius: 3px;
-  background: linear-gradient(90deg, var(--accent), #C084FC);
-  transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
-  width: 0%;
-}
-
-/* ── Buttons ─────────────────────────────────────────────────────────── */
-.btn {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 9px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 12px; font-weight: 700;
-  cursor: pointer;
-  border: none;
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-.btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.btn-primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #fff;
-  box-shadow: 0 2px 10px rgba(139,92,246,0.35);
-}
-.btn-primary:hover:not(:disabled) {
-  box-shadow: 0 4px 16px rgba(139,92,246,0.5);
-  transform: translateY(-1px);
-}
-.btn-secondary {
-  background: var(--surface2);
-  color: var(--text2);
-  border: 1px solid var(--border);
-}
-.btn-secondary:hover:not(:disabled) { background: var(--border); color: var(--text); }
-.btn-success {
-  background: rgba(16,185,129,0.12);
-  color: var(--good);
-  border: 1px solid rgba(16,185,129,0.25);
-}
-.btn-success:hover:not(:disabled) { background: rgba(16,185,129,0.2); }
-.btn-row { display: flex; gap: 8px; }
-.btn-row .btn { flex: 1; }
-
-/* ── Progress ────────────────────────────────────────────────────────── */
-.progress-section {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  display: flex; flex-direction: column; gap: 10px;
-}
-.progress-step { font-size: 11.5px; color: var(--text2); min-height: 16px; }
-.progress-track {
-  height: 4px; background: var(--surface); border-radius: 2px; overflow: hidden;
-}
-.progress-fill {
-  height: 100%; border-radius: 2px;
-  background: linear-gradient(90deg, var(--accent), #C084FC);
-  transition: width 0.4s;
-  width: 0%;
-}
-.progress-shimmer {
-  animation: shimmer 1.5s infinite;
-}
-@keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-/* ── Result Card ─────────────────────────────────────────────────────── */
-.result-card {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  display: flex; flex-direction: column; gap: 12px;
-}
-.result-stats { display: flex; gap: 8px; flex-wrap: wrap; }
-.result-stat {
-  flex: 1; min-width: 80px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 10px;
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-}
-.result-stat-value { font-size: 22px; font-weight: 800; }
-.result-stat-label { font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text3); }
-.result-stat.score .result-stat-value { color: var(--good); }
-.result-stat.flagged .result-stat-value { color: var(--warn); }
-.result-stat.elements .result-stat-value { color: var(--info); }
-
-/* ── Flagged Item List ───────────────────────────────────────────────── */
-.flagged-list { display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
-.flagged-item {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--warn);
-  border-radius: var(--radius-sm);
-  padding: 9px 11px;
-}
-.flagged-item-header { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
-.flagged-item-name {
-  font-size: 11px; font-weight: 600; color: var(--text);
-  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.flagged-cat {
-  font-size: 9px; font-weight: 700; text-transform: uppercase;
-  padding: 2px 6px; border-radius: 10px; letter-spacing: 0.05em;
-}
-.flagged-cat.layout { background: rgba(245,158,11,0.15); color: var(--warn); }
-.flagged-cat.visual-effect { background: rgba(239,68,68,0.12); color: var(--bad); }
-.flagged-cat.typography { background: rgba(59,130,246,0.12); color: var(--info); }
-.flagged-cat.asset { background: rgba(139,92,246,0.12); color: var(--accent); }
-.flagged-cat.animation { background: rgba(16,185,129,0.12); color: var(--good); }
-.flagged-cat.component { background: rgba(148,163,184,0.12); color: var(--text3); }
-.flagged-reason { font-size: 10.5px; color: var(--text2); margin-top: 4px; line-height: 1.4; }
-.flagged-fix { font-size: 10px; color: var(--accent); margin-top: 3px; }
-.flagged-fix::before { content: '→ '; }
-
-/* ── Settings ────────────────────────────────────────────────────────── */
-.settings-group {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  margin-bottom: 16px;
-}
-.settings-group:last-child { margin-bottom: 0; }
-.settings-group-title {
-  padding: 12px 16px;
-  font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.07em; color: var(--text3);
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-}
-.setting-row {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-  gap: 16px;
-  width: 100%;
-}
-.setting-row > div:first-child { flex: 1; min-width: 0; padding-right: 8px; }
-.setting-row:last-child { border-bottom: none; }
-.setting-label { font-size: 12px; color: var(--text); font-weight: 500; }
-.setting-desc { font-size: 10.5px; color: var(--text3); margin-top: 4px; line-height: 1.4; }
-.setting-control { flex-shrink: 0; }
-.toggle {
-  position: relative; width: 32px; height: 18px;
-  cursor: pointer;
-}
-.toggle input { opacity: 0; width: 0; height: 0; }
-.toggle-track {
-  position: absolute; inset: 0;
-  background: var(--border);
-  border-radius: 9px;
-  transition: background 0.2s;
-}
-.toggle input:checked + .toggle-track { background: var(--accent); }
-.toggle-thumb {
-  position: absolute; top: 2px; left: 2px;
-  width: 14px; height: 14px; border-radius: 50%;
-  background: #fff;
-  transition: transform 0.2s;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-}
-.toggle input:checked ~ .toggle-thumb { transform: translateX(14px); }
-.setting-select, .setting-input {
-  background: var(--surface); border: 1px solid var(--border);
-  color: var(--text); border-radius: 5px;
-  padding: 4px 8px; font-size: 11.5px;
-  outline: none;
-  transition: border-color 0.15s;
-}
-.setting-select:focus, .setting-input:focus { border-color: var(--accent); }
-.setting-input { width: 70px; text-align: right; }
-
-/* ── WP Push ─────────────────────────────────────────────────────────── */
-.wp-section {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 14px;
-  display: flex; flex-direction: column; gap: 10px;
-}
-.wp-field { display: flex; flex-direction: column; gap: 5px; }
-.wp-label { font-size: 11px; font-weight: 600; color: var(--text2); }
-.wp-input {
-  background: var(--surface); border: 1px solid var(--border);
-  color: var(--text); border-radius: 5px;
-  padding: 7px 10px; font-size: 12px;
-  outline: none; width: 100%;
-  transition: border-color 0.15s;
-}
-.wp-input:focus { border-color: var(--accent); }
-.wp-note { font-size: 10px; color: var(--text3); line-height: 1.4; }
-
-/* ── Footer ─────────────────────────────────────────────────────────── */
-.footer {
-  padding: 10px 16px;
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 8px;
-  width: 100%;
-}
-.footer-note { font-size: 10px; color: var(--text3); flex: 1; min-width: 0; line-height: 1.3; }
-
-/* ── Toast ───────────────────────────────────────────────────────────── */
-.toast {
-  position: fixed; bottom: 52px; left: 50%; transform: translateX(-50%) translateY(20px);
-  opacity: 0; pointer-events: none;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 8px 14px;
-  font-size: 11.5px; color: var(--text);
-  transition: all 0.25s;
-  max-width: 90%;
-  word-wrap: break-word;
-  text-align: center;
-  line-height: 1.4;
-  z-index: 100;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast.success { border-color: rgba(16,185,129,0.4); color: var(--good); }
-.toast.error { border-color: rgba(239,68,68,0.4); color: var(--bad); }
-
-/* ── Empty state ─────────────────────────────────────────────────────── */
-.empty-state {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 10px; padding: 32px 16px; text-align: center;
-  flex: 1;
-}
-.empty-icon { font-size: 32px; opacity: 0.4; }
-.empty-title { font-size: 13px; font-weight: 700; color: var(--text2); }
-.empty-desc { font-size: 11px; color: var(--text3); line-height: 1.5; max-width: 200px; }
-
-/* ── Misc ────────────────────────────────────────────────────────────── */
-.hidden { display: none !important; }
-.divider { height: 1px; background: var(--border); margin: 0 -16px; }
-.tag {
-  font-size: 9.5px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.05em; padding: 2px 7px; border-radius: 10px;
-}
-.tag-pro { background: rgba(139,92,246,0.15); color: var(--accent); border: 1px solid rgba(139,92,246,0.2); }
-</style>
-</head>
-<body>
-
-<!-- ── Header ─────────────────────────────────────────────────────────── -->
-<header class="header">
-  <div class="header-logo">⚡</div>
-  <div>
-    <div class="header-title">Figma → Elementor Native</div>
-    <div class="header-sub">Zero HTML · Zero CSS · 100% native widgets</div>
-  </div>
-  <span class="header-badge">v1.0</span>
-</header>
-
-<!-- ── Tab Bar ────────────────────────────────────────────────────────── -->
-<nav class="tabs">
-  <div class="tab active" data-tab="analyze">Analyze</div>
-  <div class="tab" data-tab="convert">Convert</div>
-  <div class="tab" data-tab="review">Review</div>
-  <div class="tab" data-tab="settings">Settings</div>
-</nav>
-
-<!-- ── Panels ─────────────────────────────────────────────────────────── -->
-<div class="panels">
-
-  <!-- ── ANALYZE PANEL ──────────────────────────────────────────────── -->
-  <div class="panel active" id="panel-analyze">
-    <div class="panel-scroll">
-
-      <!-- Selection -->
-      <div class="selection-banner">
-        <div class="sel-dot" id="sel-dot"></div>
-        <div class="sel-text">
-          <div id="sel-status">Select a Frame or Component in Figma</div>
-          <div class="truncate" id="sel-name" style="color:var(--text3);font-size:10px;"></div>
-        </div>
-      </div>
-
-      <!-- Score (hidden until analyzed) -->
-      <div id="score-section" class="hidden">
-        <div class="score-card">
-          <div class="score-ring">
-            <svg width="64" height="64" viewBox="0 0 64 64">
-              <circle cx="32" cy="32" r="26" fill="none" stroke="var(--surface)" stroke-width="6"/>
-              <circle id="score-arc" cx="32" cy="32" r="26" fill="none" stroke="var(--accent)"
-                stroke-width="6" stroke-linecap="round"
-                stroke-dasharray="163.36" stroke-dashoffset="163.36"/>
-            </svg>
-            <div class="score-ring-text">
-              <div class="score-num" id="score-num" style="color:var(--accent)">—</div>
-              <div class="score-label">Score</div>
-            </div>
-          </div>
-          <div class="score-details">
-            <div class="score-grade" id="score-grade">—</div>
-            <div class="score-desc" id="score-desc">Run analysis to see your rating</div>
-            <div class="score-stats">
-              <div class="score-stat">Nodes: <span id="stat-nodes">—</span></div>
-              <div class="score-stat">Auto-layout: <span id="stat-auto">—</span></div>
-              <div class="score-stat">Issues: <span id="stat-issues">—</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Issues -->
-      <div id="issues-section" class="hidden">
-        <div class="section-title">Pre-conversion Issues</div>
-        <button id="fix-all-btn" class="fix-all-btn hidden">⚡ Auto-fix All Issues</button>
-        <div class="issue-list" id="issue-list"></div>
-      </div>
-
-      <!-- Empty state when no analysis yet -->
-      <div id="analyze-empty" class="empty-state">
-        <div class="empty-icon">🔍</div>
-        <div class="empty-title">Readiness Check</div>
-        <div class="empty-desc">Select a Figma frame, then run the analysis to see how well it will convert.</div>
-      </div>
-
-    </div>
-
-    <!-- Footer buttons -->
-    <div class="footer">
-      <div class="footer-note" id="analyze-footer-note">Select a frame first</div>
-      <button class="btn btn-primary" id="btn-analyze" disabled>Analyze Design</button>
-    </div>
-  </div>
-
-  <!-- ── CONVERT PANEL ──────────────────────────────────────────────── -->
-  <div class="panel" id="panel-convert">
-    <div class="panel-scroll">
-
-      <!-- Selection echo -->
-      <div class="selection-banner">
-        <div class="sel-dot" id="sel-dot2"></div>
-        <div class="sel-text">
-          <div id="sel-status2">Select a Frame to convert</div>
-          <div class="truncate" id="sel-name2" style="color:var(--text3);font-size:10px;"></div>
-        </div>
-      </div>
-
-      <!-- Progress (hidden until converting) -->
-      <div id="progress-section" class="hidden progress-section">
-        <div class="progress-step" id="progress-step">Preparing…</div>
-        <div class="progress-track">
-          <div class="progress-fill" id="progress-fill"></div>
-        </div>
-      </div>
-
-      <!-- Result (hidden until done) -->
-      <div id="result-section" class="hidden result-card">
-        <div class="result-stats">
-          <div class="result-stat score">
-            <div class="result-stat-value" id="r-score">—</div>
-            <div class="result-stat-label">Fidelity</div>
-          </div>
-          <div class="result-stat elements">
-            <div class="result-stat-value" id="r-elements">—</div>
-            <div class="result-stat-label">Elements</div>
-          </div>
-          <div class="result-stat flagged">
-            <div class="result-stat-value" id="r-flagged">—</div>
-            <div class="result-stat-label">Flagged</div>
-          </div>
-        </div>
-
-        <div class="fidelity-bar-wrap">
-          <div class="fidelity-bar-header">
-            <div class="fidelity-bar-label">Visual Fidelity</div>
-            <div class="fidelity-bar-value" id="r-bar-val">—%</div>
-          </div>
-          <div class="fidelity-bar-bg">
-            <div class="fidelity-bar-fill" id="r-bar"></div>
-          </div>
-        </div>
-
-        <div class="btn-row">
-          <button class="btn btn-success" id="btn-download">⬇ Download JSON</button>
-          <button class="btn btn-secondary" id="btn-review-link">View Flags →</button>
-        </div>
-      </div>
-
-      <!-- Convert Options -->
-      <div class="settings-group" style="margin-top:auto;">
-        <div class="settings-group-title">Options</div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Skip header & footer</div>
-            <div class="setting-desc">Ignore top-level nav/header/footer layers</div>
-          </div>
-          <div class="setting-control">
-            <label class="toggle">
-              <input type="checkbox" id="opt-skip-hf" />
-              <div class="toggle-track"></div>
-              <div class="toggle-thumb"></div>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <!-- WP Push -->
-      <div class="wp-section" id="wp-section">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="font-size:12px;font-weight:700;color:var(--text)">WordPress Push</span>
-          <span class="tag tag-pro">optional</span>
-        </div>
-        <div class="wp-field">
-          <div class="wp-label">Site URL</div>
-          <input class="wp-input" id="wp-url" type="url" placeholder="https://yoursite.com" />
-        </div>
-        <div class="wp-field">
-          <div class="wp-label">Username</div>
-          <input class="wp-input" id="wp-user" type="text" placeholder="admin" />
-        </div>
-        <div class="wp-field">
-          <div class="wp-label">Application Password</div>
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <input class="wp-input" id="wp-pass" type="password" placeholder="xxxx xxxx xxxx xxxx" style="flex: 1; min-width: 0;" />
-            <button class="btn btn-secondary" id="btn-save-creds" style="padding: 7px 12px; font-size: 11.5px; height: 31px; flex-shrink: 0;">Save</button>
-          </div>
-          <div class="wp-note">WordPress → Users → Security → Application Passwords.</div>
-        </div>
-        <button class="btn btn-primary" id="btn-wp-push" disabled style="margin-top: 4px;">Push to WordPress</button>
-      </div>
-
-    </div>
-
-    <div class="footer">
-      <div class="footer-note" id="convert-footer-note">Ready to convert</div>
-      <button class="btn btn-primary" id="btn-convert" disabled>Convert →</button>
-    </div>
-  </div>
-
-  <!-- ── REVIEW PANEL ───────────────────────────────────────────────── -->
-  <div class="panel" id="panel-review">
-    <div class="panel-scroll">
-
-      <div id="review-empty" class="empty-state">
-        <div class="empty-icon">🚩</div>
-        <div class="empty-title">No Review Yet</div>
-        <div class="empty-desc">Run a conversion first. Unsupported elements will appear here with fix suggestions.</div>
-      </div>
-
-      <div id="flagged-section" class="hidden">
-        <div class="section-title" id="flagged-summary">0 Items Flagged for Manual Review</div>
-        <div class="flagged-list" id="flagged-list"></div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ── SETTINGS PANEL ─────────────────────────────────────────────── -->
-  <div class="panel" id="panel-settings">
-    <div class="panel-scroll">
-
-      <div class="settings-group">
-        <div class="settings-group-title">Layout</div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Container max width</div>
-            <div class="setting-desc">Boxed sections cap width (px)</div>
-          </div>
-          <div class="setting-control">
-            <input class="setting-input" id="opt-max-width" type="number" value="1200" min="800" max="2560" step="40" />
-          </div>
-        </div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Max nesting depth</div>
-            <div class="setting-desc">Deeper nodes are exported as images</div>
-          </div>
-          <div class="setting-control">
-            <input class="setting-input" id="opt-depth" type="number" value="12" min="4" max="20" step="1" />
-          </div>
-        </div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Mobile breakpoint</div>
-            <div class="setting-desc">px — applied to font size scaling</div>
-          </div>
-          <div class="setting-control">
-            <input class="setting-input" id="opt-mobile-bp" type="number" value="767" min="320" max="1024" step="1" />
-          </div>
-        </div>
-      </div>
-
-      <div class="settings-group">
-        <div class="settings-group-title">Typography</div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Infer heading levels</div>
-            <div class="setting-desc">Auto-detect H1–H6 from font size</div>
-          </div>
-          <div class="setting-control">
-            <label class="toggle">
-              <input type="checkbox" id="opt-infer-headings" checked />
-              <div class="toggle-track"></div>
-              <div class="toggle-thumb"></div>
-            </label>
-          </div>
-        </div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Extract global fonts</div>
-            <div class="setting-desc">Map Figma text styles to Elementor</div>
-          </div>
-          <div class="setting-control">
-            <label class="toggle">
-              <input type="checkbox" id="opt-global-fonts" checked />
-              <div class="toggle-track"></div>
-              <div class="toggle-thumb"></div>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <div class="settings-group">
-        <div class="settings-group-title">Colors</div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Extract global colors</div>
-            <div class="setting-desc">Map Figma color styles to Elementor kit</div>
-          </div>
-          <div class="setting-control">
-            <label class="toggle">
-              <input type="checkbox" id="opt-global-colors" checked />
-              <div class="toggle-track"></div>
-              <div class="toggle-thumb"></div>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <!-- Images setting removed as requested -->
-
-      <div class="settings-group">
-        <div class="settings-group-title">Elementor</div>
-        <div class="setting-row">
-          <div>
-            <div class="setting-label">Include Pro widgets</div>
-            <div class="setting-desc">Flip Box, Price Table, Call to Action…</div>
-          </div>
-          <div class="setting-control">
-            <label class="toggle">
-              <input type="checkbox" id="opt-pro-widgets" checked />
-              <div class="toggle-track"></div>
-              <div class="toggle-thumb"></div>
-            </label>
-          </div>
-        </div>
-      </div>
-
-    </div>
-    <div class="footer">
-      <div class="footer-note">Settings are applied on each conversion</div>
-      <button class="btn btn-secondary" id="btn-reset-settings">Reset Defaults</button>
-    </div>
-  </div>
-
-</div>
-
-<!-- ── Toast ──────────────────────────────────────────────────────────── -->
-<div class="toast" id="toast"></div>
-
-<script>
-// ─────────────────────────────────────────────────────────────────────────────
-// State
-// ─────────────────────────────────────────────────────────────────────────────
-const state = {
-  hasSelection: false,
-  selectedNodeName: '',
-  selectedNodeId: '',
-  isConverting: false,
-  convertedJson: null,
-  flaggedItems: [],
-  fidelityScore: 0,
-  elementCount: 0,
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Tabs
-// ─────────────────────────────────────────────────────────────────────────────
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-    tab.classList.add('active');
-    const id = 'panel-' + tab.dataset.tab;
-    document.getElementById(id)?.classList.add('active');
-  });
-});
-
-function switchTo(tabName) {
-  document.querySelectorAll('.tab').forEach(t => {
-    t.classList.toggle('active', t.dataset.tab === tabName);
-  });
-  document.querySelectorAll('.panel').forEach(p => {
-    p.classList.toggle('active', p.id === 'panel-' + tabName);
-  });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Toast
-// ─────────────────────────────────────────────────────────────────────────────
-let toastTimer;
-function showToast(msg, type = '', duration = 3000) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = 'toast show' + (type ? ' ' + type : '');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { el.className = 'toast'; }, duration);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Selection UI
-// ─────────────────────────────────────────────────────────────────────────────
-function updateSelection(hasSelection, name, id) {
-  state.hasSelection = hasSelection;
-  state.selectedNodeName = name || '';
-  state.selectedNodeId = id || '';
-
-  // Analyze tab
-  const dot = document.getElementById('sel-dot');
-  dot.className = 'sel-dot ' + (hasSelection ? 'ok' : 'none');
-  document.getElementById('sel-status').textContent =
-    hasSelection ? 'Frame selected' : 'Select a Frame or Component in Figma';
-  const nameEl = document.getElementById('sel-name');
-  nameEl.textContent = hasSelection ? `"${name}"` : '';
-
-  // Convert tab
-  const dot2 = document.getElementById('sel-dot2');
-  dot2.className = 'sel-dot ' + (hasSelection ? 'ok' : 'none');
-  document.getElementById('sel-status2').textContent =
-    hasSelection ? 'Ready to convert' : 'Select a Frame to convert';
-  document.getElementById('sel-name2').textContent = hasSelection ? `"${name}"` : '';
-
-  // Buttons
-  document.getElementById('btn-analyze').disabled = !hasSelection;
-  document.getElementById('btn-convert').disabled = !hasSelection || state.isConverting;
-  document.getElementById('btn-wp-push').disabled = !state.convertedJson;
-  document.getElementById('analyze-footer-note').textContent =
-    hasSelection ? `"${name}" selected` : 'Select a frame first';
-  document.getElementById('convert-footer-note').textContent =
-    hasSelection ? 'Click Convert to start' : 'Select a frame first';
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Per-issue step-by-step guides for things the plugin cannot auto-fix
-// ─────────────────────────────────────────────────────────────────────────────
-const ISSUE_GUIDES = {
-  OVERLAPPING_LAYERS: [
-    'Open the <strong>Layers panel</strong> (left sidebar).',
-    'Click on each highlighted layer name to select it on the canvas.',
-    'Reorder layers so they stack <em>sequentially</em> without overlap — drag them in the Layers panel.',
-    'If they must overlap (e.g. a badge on a card), select both → right-click → <strong>Flatten</strong> to merge them into one image.',
-  ],
-  MASKS: [
-    'Select the masked layer group (it shows a mask icon in the Layers panel).',
-    'Right-click the group → <strong>Flatten Selection</strong>. This bakes the mask into a single PNG.',
-    'The plugin will then export it as an image instead of trying to convert the mask.',
-  ],
-  GENERIC_NAMES: [
-    'Open the <strong>Layers panel</strong> (left sidebar).',
-    'Double-click a layer name like "Frame 3" or "Group 7" to rename it.',
-    'Use descriptive names like <strong>"Hero Section"</strong>, <strong>"Nav Bar"</strong>, <strong>"Feature Card"</strong>.',
-    'Good names let the plugin and Elementor editor stay readable after import.',
-  ],
-  NO_COLOR_STYLES: [
-    'Select a shape or text that uses one of your brand colors.',
-    'In the <strong>Design panel</strong> (right sidebar), click the color swatch.',
-    'Click the <strong>Style icon</strong> (four dots) → press <strong>"+"</strong> to save it as a color style.',
-    'Repeat for each brand color. The plugin will map these to Elementor Global Colors.',
-  ],
-  NO_TEXT_STYLES: [
-    'Select a text layer (e.g. your main heading).',
-    'In the <strong>Design panel</strong>, click the <strong>Style icon</strong> (four dots) next to the text properties.',
-    'Press <strong>"+"</strong> and name it (e.g. "Heading 1", "Body Text").',
-    'Repeat for each text level. The plugin maps these to Elementor typography presets.',
-  ],
-};
-
-const AUTO_FIX_CODES = ['BLUR_EFFECTS', 'BLEND_MODES', 'ROTATION', 'ABSOLUTE_POSITIONING'];
-const AUTO_FIX_LABELS = {
-  BLUR_EFFECTS:          '⚡ Remove Blurs',
-  BLEND_MODES:           '⚡ Reset Blend Modes',
-  ROTATION:              '⚡ Reset Rotation to 0°',
-  ABSOLUTE_POSITIONING:  '⚡ Fix Positioning',
-};
-const AUTO_FIX_WHAT = {
-  BLUR_EFFECTS:          'Strips the blur/background-blur effect from each node so Elementor can render it.',
-  BLEND_MODES:           'Resets the layer blend mode to Normal so colours match in Elementor.',
-  ROTATION:              'Sets rotation to 0° — rotated frames break Elementor\'s flex layout.',
-  ABSOLUTE_POSITIONING:  'Switches absolute-positioned children back to auto-layout flow.',
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Preflight Results
-// ─────────────────────────────────────────────────────────────────────────────
-function zoomToNodes(nodeIds) {
-  parent.postMessage({ pluginMessage: { type: 'select-nodes', nodeIds } }, '*');
-}
-
-function sendFix(code, nodeIds) {
-  parent.postMessage({ pluginMessage: { type: 'fix-issue', code, nodeIds, options: getOptions() } }, '*');
-}
-
-function renderPreflightReport(report) {
-  document.getElementById('analyze-empty').classList.add('hidden');
-  document.getElementById('score-section').classList.remove('hidden');
-
-  const score = report.score;
-  const circumference = 163.36;
-  const arc = document.getElementById('score-arc');
-  arc.style.strokeDashoffset = circumference - (score / 100) * circumference;
-
-  const colors = score >= 80 ? '#10B981' : score >= 60 ? '#F59E0B' : '#EF4444';
-  arc.style.stroke = colors;
-  document.getElementById('score-num').textContent = score;
-  document.getElementById('score-num').style.color = colors;
-  document.getElementById('score-grade').textContent = report.grade;
-
-  const descs = { A: 'Excellent — high fidelity expected', B: 'Good — minor manual fixes', C: 'Fair — some rework needed', D: 'Poor — significant issues', F: 'Very Low — major restructure recommended' };
-  document.getElementById('score-desc').textContent = descs[report.grade] || '';
-  document.getElementById('stat-nodes').textContent = report.totalNodes;
-  document.getElementById('stat-auto').textContent = `${report.autoLayoutNodes} (${Math.round(report.autoLayoutNodes/Math.max(1,report.totalNodes)*100)}%)`;
-  document.getElementById('stat-issues').textContent = report.issues.length;
-
-  const issueList = document.getElementById('issue-list');
-  issueList.innerHTML = '';
-  const fixAllBtn = document.getElementById('fix-all-btn');
-
-  if (report.issues.length === 0) {
-    document.getElementById('issues-section').classList.remove('hidden');
-    fixAllBtn.classList.add('hidden');
-    issueList.innerHTML = `<div style="text-align:center;padding:16px;color:var(--good);font-size:11.5px;font-weight:600;">✅ No issues found — ready to convert!</div>`;
-    return;
-  }
-
-  // Collect all auto-fixable node IDs grouped by code for the Fix All button
-  const fixAllMap = {};
-  report.issues.forEach(issue => {
-    if (AUTO_FIX_CODES.includes(issue.code) && issue.affectedNodes.length > 0) {
-      fixAllMap[issue.code] = issue.affectedNodes.map(n => n.id);
-    }
-  });
-  const hasAnyAutoFix = Object.keys(fixAllMap).length > 0;
-
-  if (hasAnyAutoFix) {
-    fixAllBtn.classList.remove('hidden');
-    fixAllBtn.onclick = function() {
-      this.disabled = true;
-      this.textContent = 'Fixing…';
-      // Fire each fix sequentially via a small queue
-      const entries = Object.entries(fixAllMap);
-      let i = 0;
-      function next() {
-        if (i >= entries.length) return;
-        const [code, nodeIds] = entries[i++];
-        sendFix(code, nodeIds);
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Figma → Elementor Native</title>
+    <style>
+      /* ── Reset & Base ────────────────────────────────────────────────────── */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
       }
-      // Only the last fix-result will re-render; fire all at once is fine because
-      // code.ts processes them sequentially via the message queue.
-      entries.forEach(([code, nodeIds]) => sendFix(code, nodeIds));
-    };
-  } else {
-    fixAllBtn.classList.add('hidden');
-  }
 
-  document.getElementById('issues-section').classList.remove('hidden');
-  const icons = { error: '🔴', warning: '🟡', info: '🔵' };
+      :root {
+        --bg: #0f0f13;
+        --surface: #1a1a22;
+        --surface2: #23232f;
+        --border: #2e2e3e;
+        --accent: #8b5cf6;
+        --accent2: #6d28d9;
+        --good: #10b981;
+        --warn: #f59e0b;
+        --bad: #ef4444;
+        --info: #3b82f6;
+        --text: #e8e8f0;
+        --text2: #9090a8;
+        --text3: #5a5a72;
+        --radius: 10px;
+        --radius-sm: 6px;
+        font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+        font-size: 13px;
+      }
 
-  report.issues.forEach(issue => {
-    const hasNodes = issue.affectedNodes && issue.affectedNodes.length > 0;
-    const canAutoFix = AUTO_FIX_CODES.includes(issue.code) && hasNodes;
-    const guide = ISSUE_GUIDES[issue.code];
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
 
-    const item = document.createElement('div');
-    item.className = `issue-item severity-${issue.severity}`;
-    item.dataset.code = issue.code;
+      body {
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+      }
 
-    // Build clickable node chips
-    let nodesHtml = '';
-    if (hasNodes) {
-      const chips = issue.affectedNodes.slice(0, 8).map(n =>
-        `<button class="node-chip" data-id="${escHtml(n.id)}" title="Click to zoom to this layer in Figma">${escHtml(n.name)}</button>`
-      ).join('');
-      const more = issue.affectedNodes.length > 8
-        ? `<span style="font-size:9.5px;color:var(--text3);">+${issue.affectedNodes.length - 8} more</span>`
-        : '';
-      nodesHtml = `<div style="margin-top:6px;margin-bottom:2px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;">${chips}${more}</div>`;
-    }
+      /* ── Header ─────────────────────────────────────────────────────────── */
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px 10px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface);
+      }
+      .header > div {
+        flex: 1;
+        min-width: 0;
+      }
+      .header-logo {
+        width: 28px;
+        height: 28px;
+        background: linear-gradient(135deg, var(--accent) 0%, #c084fc 100%);
+        border-radius: 7px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+      }
+      .header-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .header-sub {
+        font-size: 10px;
+        color: var(--text3);
+        margin-top: 1px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .header-badge {
+        margin-left: auto;
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 2px 7px;
+        border-radius: 20px;
+        background: rgba(139, 92, 246, 0.15);
+        color: var(--accent);
+        border: 1px solid rgba(139, 92, 246, 0.25);
+      }
 
-    // Build "What will this fix?" explanation for auto-fixable issues
-    const whatHtml = canAutoFix
-      ? `<div style="margin-top:4px;font-size:9.5px;color:var(--text3);line-height:1.4;">💡 ${escHtml(AUTO_FIX_WHAT[issue.code])}</div>`
-      : '';
+      /* ── Tab Bar ─────────────────────────────────────────────────────────── */
+      .tabs {
+        display: flex;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 0 16px;
+      }
+      .tab {
+        padding: 8px 12px 7px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--text3);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s;
+        user-select: none;
+        white-space: nowrap;
+      }
+      .tab:hover {
+        color: var(--text2);
+      }
+      .tab.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+      }
 
-    // Build step-by-step guide for manual issues
-    let guideHtml = '';
-    if (!canAutoFix && guide) {
-      const steps = guide.map((s, i) =>
-        `<div class="guide-step"><div class="guide-step-num">${i+1}</div><div>${s}</div></div>`
-      ).join('');
-      guideHtml = `
+      /* ── Tab Panels ─────────────────────────────────────────────────────── */
+      .panels {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .panel {
+        display: none;
+        flex: 1;
+        min-height: 0;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .panel.active {
+        display: flex;
+      }
+      .panel-scroll {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+      }
+      .panel-scroll > * {
+        flex-shrink: 0;
+      }
+      .panel-scroll::-webkit-scrollbar {
+        width: 4px;
+      }
+      .panel-scroll::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .panel-scroll::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 2px;
+      }
+
+      /* ── Selection Banner ────────────────────────────────────────────────── */
+      .selection-banner {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        background: var(--surface2);
+        border: 1px solid var(--border);
+      }
+      .sel-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        transition: background 0.2s;
+      }
+      .sel-dot.ok {
+        background: var(--good);
+        box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
+      }
+      .sel-dot.none {
+        background: var(--text3);
+      }
+      .sel-text {
+        font-size: 11.5px;
+        color: var(--text2);
+        min-width: 0;
+      }
+      .sel-text strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .sel-text .truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* ── Score Ring ─────────────────────────────────────────────────────── */
+      .score-card {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .score-ring {
+        width: 64px;
+        height: 64px;
+        flex-shrink: 0;
+        position: relative;
+      }
+      .score-ring svg {
+        transform: rotate(-90deg);
+      }
+      .score-ring-text {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .score-num {
+        font-size: 18px;
+        font-weight: 800;
+        line-height: 1;
+      }
+      .score-label {
+        font-size: 8px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text3);
+      }
+      .score-details {
+        flex: 1;
+        min-width: 0;
+      }
+      .score-grade {
+        font-size: 22px;
+        font-weight: 900;
+        line-height: 1;
+        background: linear-gradient(135deg, var(--accent), #c084fc);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: inline-block;
+      }
+      .score-desc {
+        font-size: 11px;
+        color: var(--text2);
+        margin-top: 3px;
+      }
+      .score-stats {
+        display: flex;
+        gap: 10px;
+        margin-top: 8px;
+        flex-wrap: wrap;
+      }
+      .score-stat {
+        font-size: 10px;
+        color: var(--text3);
+      }
+      .score-stat span {
+        color: var(--text2);
+        font-weight: 600;
+      }
+
+      /* ── Issue List ─────────────────────────────────────────────────────── */
+      .section-title {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--text3);
+        margin-bottom: -4px;
+      }
+      .fix-all-btn {
+        width: 100%;
+        margin-bottom: 8px;
+        padding: 8px 12px;
+        border-radius: var(--radius-sm);
+        border: 1px solid rgba(16, 185, 129, 0.45);
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--good);
+        font-size: 11px;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: background 0.15s;
+      }
+      .fix-all-btn:hover {
+        background: rgba(16, 185, 129, 0.2);
+      }
+      .fix-all-btn:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+
+      .issue-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .issue-item {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 10px 12px;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 8px 10px;
+        align-items: start;
+        transition: border-color 0.2s;
+      }
+      .issue-item.fixed {
+        border-color: rgba(16, 185, 129, 0.4);
+        background: rgba(16, 185, 129, 0.05);
+      }
+      .issue-icon {
+        font-size: 14px;
+        margin-top: 1px;
+      }
+      .issue-content {
+      }
+      .issue-title {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .issue-desc {
+        font-size: 10.5px;
+        color: var(--text2);
+        margin-top: 2px;
+        line-height: 1.4;
+      }
+
+      /* Clickable node chips */
+      .node-chip {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text2);
+        font-size: 9.5px;
+        padding: 2px 6px;
+        border-radius: 4px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        transition:
+          border-color 0.15s,
+          color 0.15s;
+      }
+      .node-chip:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .node-chip::before {
+        content: "↗";
+        font-size: 8px;
+        opacity: 0.7;
+      }
+
+      /* Step-by-step guide */
+      .issue-guide {
+        margin-top: 8px;
+        background: rgba(59, 130, 246, 0.06);
+        border: 1px solid rgba(59, 130, 246, 0.18);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+      }
+      .issue-guide-toggle {
+        width: 100%;
+        padding: 6px 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--info);
+        cursor: pointer;
+        background: none;
+        border: none;
+        text-align: left;
+      }
+      .issue-guide-toggle .arrow {
+        transition: transform 0.2s;
+        font-size: 9px;
+      }
+      .issue-guide-toggle.open .arrow {
+        transform: rotate(90deg);
+      }
+      .issue-guide-steps {
+        display: none;
+        padding: 0 10px 10px;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .issue-guide-steps.open {
+        display: flex;
+      }
+      .guide-step {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        font-size: 10px;
+        color: var(--text2);
+        line-height: 1.4;
+      }
+      .guide-step-num {
+        min-width: 16px;
+        height: 16px;
+        background: rgba(59, 130, 246, 0.2);
+        color: var(--info);
+        border-radius: 50%;
+        font-size: 9px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      .issue-fix {
+        font-size: 10px;
+        color: var(--accent);
+        margin-top: 4px;
+        display: flex;
+        align-items: flex-start;
+        gap: 4px;
+      }
+      .issue-fix::before {
+        content: "→";
+        flex-shrink: 0;
+      }
+      .issue-actions {
+        margin-top: 8px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .issue-fix-btn,
+      .issue-zoom-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: var(--radius-sm);
+        cursor: pointer;
+        transition:
+          background 0.15s,
+          border-color 0.15s;
+      }
+      .issue-fix-btn {
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--good);
+      }
+      .issue-fix-btn:hover {
+        background: rgba(16, 185, 129, 0.22);
+        border-color: rgba(16, 185, 129, 0.6);
+      }
+      .issue-fix-btn:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+      .issue-zoom-btn {
+        border: 1px solid rgba(139, 92, 246, 0.35);
+        background: rgba(139, 92, 246, 0.1);
+        color: var(--accent);
+      }
+      .issue-zoom-btn:hover {
+        background: rgba(139, 92, 246, 0.2);
+        border-color: rgba(139, 92, 246, 0.55);
+      }
+      .issue-fixed-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--good);
+        padding: 4px 10px;
+        border-radius: var(--radius-sm);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        background: rgba(16, 185, 129, 0.08);
+      }
+      .issue-item.severity-error {
+        border-color: rgba(239, 68, 68, 0.25);
+      }
+      .issue-item.severity-warning {
+        border-color: rgba(245, 158, 11, 0.25);
+      }
+      .issue-item.severity-info {
+        border-color: rgba(59, 130, 246, 0.2);
+      }
+
+      /* ── Fidelity Score Bar ──────────────────────────────────────────────── */
+      .fidelity-bar-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .fidelity-bar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .fidelity-bar-label {
+        font-size: 10px;
+        color: var(--text3);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+      }
+      .fidelity-bar-value {
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .fidelity-bar-bg {
+        height: 6px;
+        background: var(--surface2);
+        border-radius: 3px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+      .fidelity-bar-fill {
+        height: 100%;
+        border-radius: 3px;
+        background: linear-gradient(90deg, var(--accent), #c084fc);
+        transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 0%;
+      }
+
+      /* ── Buttons ─────────────────────────────────────────────────────────── */
+      .btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 9px 16px;
+        border-radius: var(--radius-sm);
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+      .btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        color: #fff;
+        box-shadow: 0 2px 10px rgba(139, 92, 246, 0.35);
+      }
+      .btn-primary:hover:not(:disabled) {
+        box-shadow: 0 4px 16px rgba(139, 92, 246, 0.5);
+        transform: translateY(-1px);
+      }
+      .btn-secondary {
+        background: var(--surface2);
+        color: var(--text2);
+        border: 1px solid var(--border);
+      }
+      .btn-secondary:hover:not(:disabled) {
+        background: var(--border);
+        color: var(--text);
+      }
+      .btn-success {
+        background: rgba(16, 185, 129, 0.12);
+        color: var(--good);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+      }
+      .btn-success:hover:not(:disabled) {
+        background: rgba(16, 185, 129, 0.2);
+      }
+      .btn-row {
+        display: flex;
+        gap: 8px;
+      }
+      .btn-row .btn {
+        flex: 1;
+      }
+
+      /* ── Progress ────────────────────────────────────────────────────────── */
+      .progress-section {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .progress-step {
+        font-size: 11.5px;
+        color: var(--text2);
+        min-height: 16px;
+      }
+      .progress-track {
+        height: 4px;
+        background: var(--surface);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        border-radius: 2px;
+        background: linear-gradient(90deg, var(--accent), #c084fc);
+        transition: width 0.4s;
+        width: 0%;
+      }
+      .progress-shimmer {
+        animation: shimmer 1.5s infinite;
+      }
+      @keyframes shimmer {
+        0% {
+          background-position: -200% 0;
+        }
+        100% {
+          background-position: 200% 0;
+        }
+      }
+
+      /* ── Result Card ─────────────────────────────────────────────────────── */
+      .result-card {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .result-stats {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .result-stat {
+        flex: 1;
+        min-width: 80px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+      }
+      .result-stat-value {
+        font-size: 22px;
+        font-weight: 800;
+      }
+      .result-stat-label {
+        font-size: 9.5px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text3);
+      }
+      .result-stat.score .result-stat-value {
+        color: var(--good);
+      }
+      .result-stat.flagged .result-stat-value {
+        color: var(--warn);
+      }
+      .result-stat.elements .result-stat-value {
+        color: var(--info);
+      }
+
+      /* ── Flagged Item List ───────────────────────────────────────────────── */
+      .flagged-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-height: 280px;
+        overflow-y: auto;
+      }
+      .flagged-item {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--warn);
+        border-radius: var(--radius-sm);
+        padding: 9px 11px;
+      }
+      .flagged-item-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        justify-content: space-between;
+      }
+      .flagged-item-name {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text);
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .flagged-cat {
+        font-size: 9px;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 2px 6px;
+        border-radius: 10px;
+        letter-spacing: 0.05em;
+      }
+      .flagged-cat.layout {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--warn);
+      }
+      .flagged-cat.visual-effect {
+        background: rgba(239, 68, 68, 0.12);
+        color: var(--bad);
+      }
+      .flagged-cat.typography {
+        background: rgba(59, 130, 246, 0.12);
+        color: var(--info);
+      }
+      .flagged-cat.asset {
+        background: rgba(139, 92, 246, 0.12);
+        color: var(--accent);
+      }
+      .flagged-cat.animation {
+        background: rgba(16, 185, 129, 0.12);
+        color: var(--good);
+      }
+      .flagged-cat.component {
+        background: rgba(148, 163, 184, 0.12);
+        color: var(--text3);
+      }
+      .flagged-reason {
+        font-size: 10.5px;
+        color: var(--text2);
+        margin-top: 4px;
+        line-height: 1.4;
+      }
+      .flagged-fix {
+        font-size: 10px;
+        color: var(--accent);
+        margin-top: 3px;
+      }
+      .flagged-fix::before {
+        content: "→ ";
+      }
+
+      /* ── Settings ────────────────────────────────────────────────────────── */
+      .settings-group {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        margin-bottom: 16px;
+      }
+      .settings-group:last-child {
+        margin-bottom: 0;
+      }
+      .settings-group-title {
+        padding: 12px 16px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        color: var(--text3);
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+      }
+      .setting-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        gap: 16px;
+        width: 100%;
+      }
+      .setting-row > div:first-child {
+        flex: 1;
+        min-width: 0;
+        padding-right: 8px;
+      }
+      .setting-row:last-child {
+        border-bottom: none;
+      }
+      .setting-label {
+        font-size: 12px;
+        color: var(--text);
+        font-weight: 500;
+      }
+      .setting-desc {
+        font-size: 10.5px;
+        color: var(--text3);
+        margin-top: 4px;
+        line-height: 1.4;
+      }
+      .setting-control {
+        flex-shrink: 0;
+      }
+      .toggle {
+        position: relative;
+        width: 32px;
+        height: 18px;
+        cursor: pointer;
+      }
+      .toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      .toggle-track {
+        position: absolute;
+        inset: 0;
+        background: var(--border);
+        border-radius: 9px;
+        transition: background 0.2s;
+      }
+      .toggle input:checked + .toggle-track {
+        background: var(--accent);
+      }
+      .toggle-thumb {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: #fff;
+        transition: transform 0.2s;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      }
+      .toggle input:checked ~ .toggle-thumb {
+        transform: translateX(14px);
+      }
+      .setting-select,
+      .setting-input {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 5px;
+        padding: 4px 8px;
+        font-size: 11.5px;
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .setting-select:focus,
+      .setting-input:focus {
+        border-color: var(--accent);
+      }
+      .setting-input {
+        width: 70px;
+        text-align: right;
+      }
+
+      /* ── WP Push ─────────────────────────────────────────────────────────── */
+      .wp-section {
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .wp-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .wp-label {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text2);
+      }
+      .wp-input {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        color: var(--text);
+        border-radius: 5px;
+        padding: 7px 10px;
+        font-size: 12px;
+        outline: none;
+        width: 100%;
+        transition: border-color 0.15s;
+      }
+      .wp-input:focus {
+        border-color: var(--accent);
+      }
+      .wp-note {
+        font-size: 10px;
+        color: var(--text3);
+        line-height: 1.4;
+      }
+
+      /* ── Footer ─────────────────────────────────────────────────────────── */
+      .footer {
+        padding: 10px 16px;
+        border-top: 1px solid var(--border);
+        background: var(--surface);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        width: 100%;
+      }
+      .footer-note {
+        font-size: 10px;
+        color: var(--text3);
+        flex: 1;
+        min-width: 0;
+        line-height: 1.3;
+      }
+
+      /* ── Toast ───────────────────────────────────────────────────────────── */
+      .toast {
+        position: fixed;
+        bottom: 52px;
+        left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        opacity: 0;
+        pointer-events: none;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 8px 14px;
+        font-size: 11.5px;
+        color: var(--text);
+        transition: all 0.25s;
+        max-width: 90%;
+        word-wrap: break-word;
+        text-align: center;
+        line-height: 1.4;
+        z-index: 100;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      .toast.success {
+        border-color: rgba(16, 185, 129, 0.4);
+        color: var(--good);
+      }
+      .toast.error {
+        border-color: rgba(239, 68, 68, 0.4);
+        color: var(--bad);
+      }
+
+      /* ── Empty state ─────────────────────────────────────────────────────── */
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 32px 16px;
+        text-align: center;
+        flex: 1;
+      }
+      .empty-icon {
+        font-size: 32px;
+        opacity: 0.4;
+      }
+      .empty-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text2);
+      }
+      .empty-desc {
+        font-size: 11px;
+        color: var(--text3);
+        line-height: 1.5;
+        max-width: 200px;
+      }
+
+      /* ── Misc ────────────────────────────────────────────────────────────── */
+      .hidden {
+        display: none !important;
+      }
+      .divider {
+        height: 1px;
+        background: var(--border);
+        margin: 0 -16px;
+      }
+      .tag {
+        font-size: 9.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        padding: 2px 7px;
+        border-radius: 10px;
+      }
+      .tag-pro {
+        background: rgba(139, 92, 246, 0.15);
+        color: var(--accent);
+        border: 1px solid rgba(139, 92, 246, 0.2);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ── Header ─────────────────────────────────────────────────────────── -->
+    <header class="header">
+      <div class="header-logo">⚡</div>
+      <div>
+        <div class="header-title">Figma → Elementor Native</div>
+        <div class="header-sub">Zero HTML · Zero CSS · 100% native widgets</div>
+      </div>
+      <span class="header-badge">v1.0</span>
+    </header>
+
+    <!-- ── Tab Bar ────────────────────────────────────────────────────────── -->
+    <nav class="tabs">
+      <div class="tab active" data-tab="analyze">Analyze</div>
+      <div class="tab" data-tab="convert">Convert</div>
+      <div class="tab" data-tab="review">Review</div>
+      <div class="tab" data-tab="settings">Settings</div>
+    </nav>
+
+    <!-- ── Panels ─────────────────────────────────────────────────────────── -->
+    <div class="panels">
+      <!-- ── ANALYZE PANEL ──────────────────────────────────────────────── -->
+      <div class="panel active" id="panel-analyze">
+        <div class="panel-scroll">
+          <!-- Selection -->
+          <div class="selection-banner">
+            <div class="sel-dot" id="sel-dot"></div>
+            <div class="sel-text">
+              <div id="sel-status">Select a Frame or Component in Figma</div>
+              <div
+                class="truncate"
+                id="sel-name"
+                style="color: var(--text3); font-size: 10px"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Score (hidden until analyzed) -->
+          <div id="score-section" class="hidden">
+            <div class="score-card">
+              <div class="score-ring">
+                <svg width="64" height="64" viewBox="0 0 64 64">
+                  <circle
+                    cx="32"
+                    cy="32"
+                    r="26"
+                    fill="none"
+                    stroke="var(--surface)"
+                    stroke-width="6"
+                  />
+                  <circle
+                    id="score-arc"
+                    cx="32"
+                    cy="32"
+                    r="26"
+                    fill="none"
+                    stroke="var(--accent)"
+                    stroke-width="6"
+                    stroke-linecap="round"
+                    stroke-dasharray="163.36"
+                    stroke-dashoffset="163.36"
+                  />
+                </svg>
+                <div class="score-ring-text">
+                  <div class="score-num" id="score-num" style="color: var(--accent)">—</div>
+                  <div class="score-label">Score</div>
+                </div>
+              </div>
+              <div class="score-details">
+                <div class="score-grade" id="score-grade">—</div>
+                <div class="score-desc" id="score-desc">Run analysis to see your rating</div>
+                <div class="score-stats">
+                  <div class="score-stat">Nodes: <span id="stat-nodes">—</span></div>
+                  <div class="score-stat">Auto-layout: <span id="stat-auto">—</span></div>
+                  <div class="score-stat">Issues: <span id="stat-issues">—</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Issues -->
+          <div id="issues-section" class="hidden">
+            <div class="section-title">Pre-conversion Issues</div>
+            <button id="fix-all-btn" class="fix-all-btn hidden">⚡ Auto-fix All Issues</button>
+            <div class="issue-list" id="issue-list"></div>
+          </div>
+
+          <!-- Empty state when no analysis yet -->
+          <div id="analyze-empty" class="empty-state">
+            <div class="empty-icon">🔍</div>
+            <div class="empty-title">Readiness Check</div>
+            <div class="empty-desc">
+              Select a Figma frame, then run the analysis to see how well it will convert.
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer buttons -->
+        <div class="footer">
+          <div class="footer-note" id="analyze-footer-note">Select a frame first</div>
+          <button class="btn btn-primary" id="btn-analyze" disabled>Analyze Design</button>
+        </div>
+      </div>
+
+      <!-- ── CONVERT PANEL ──────────────────────────────────────────────── -->
+      <div class="panel" id="panel-convert">
+        <div class="panel-scroll">
+          <!-- Selection echo -->
+          <div class="selection-banner">
+            <div class="sel-dot" id="sel-dot2"></div>
+            <div class="sel-text">
+              <div id="sel-status2">Select a Frame to convert</div>
+              <div
+                class="truncate"
+                id="sel-name2"
+                style="color: var(--text3); font-size: 10px"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Progress (hidden until converting) -->
+          <div id="progress-section" class="hidden progress-section">
+            <div class="progress-step" id="progress-step">Preparing…</div>
+            <div class="progress-track">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+          </div>
+
+          <!-- Result (hidden until done) -->
+          <div id="result-section" class="hidden result-card">
+            <div class="result-stats">
+              <div class="result-stat score">
+                <div class="result-stat-value" id="r-score">—</div>
+                <div class="result-stat-label">Fidelity</div>
+              </div>
+              <div class="result-stat elements">
+                <div class="result-stat-value" id="r-elements">—</div>
+                <div class="result-stat-label">Elements</div>
+              </div>
+              <div class="result-stat flagged">
+                <div class="result-stat-value" id="r-flagged">—</div>
+                <div class="result-stat-label">Flagged</div>
+              </div>
+            </div>
+
+            <div class="fidelity-bar-wrap">
+              <div class="fidelity-bar-header">
+                <div class="fidelity-bar-label">Visual Fidelity</div>
+                <div class="fidelity-bar-value" id="r-bar-val">—%</div>
+              </div>
+              <div class="fidelity-bar-bg">
+                <div class="fidelity-bar-fill" id="r-bar"></div>
+              </div>
+            </div>
+
+            <div class="btn-row">
+              <button class="btn btn-success" id="btn-download">⬇ Download JSON</button>
+              <button class="btn btn-secondary" id="btn-review-link">View Flags →</button>
+            </div>
+          </div>
+
+          <!-- Convert Options -->
+          <div class="settings-group" style="margin-top: auto">
+            <div class="settings-group-title">Options</div>
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Skip header & footer</div>
+                <div class="setting-desc">Ignore top-level nav/header/footer layers</div>
+              </div>
+              <div class="setting-control">
+                <label class="toggle">
+                  <input type="checkbox" id="opt-skip-hf" />
+                  <div class="toggle-track"></div>
+                  <div class="toggle-thumb"></div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- WP Push -->
+          <div class="wp-section" id="wp-section">
+            <div style="display: flex; align-items: center; gap: 8px">
+              <span style="font-size: 12px; font-weight: 700; color: var(--text)"
+                >WordPress Push</span
+              >
+              <span class="tag tag-pro">optional</span>
+            </div>
+            <div class="wp-field">
+              <div class="wp-label">Site URL</div>
+              <input class="wp-input" id="wp-url" type="url" placeholder="https://yoursite.com" />
+            </div>
+            <div class="wp-field">
+              <div class="wp-label">Username</div>
+              <input class="wp-input" id="wp-user" type="text" placeholder="admin" />
+            </div>
+            <div class="wp-field">
+              <div class="wp-label">Application Password</div>
+              <div style="display: flex; gap: 8px; align-items: center">
+                <input
+                  class="wp-input"
+                  id="wp-pass"
+                  type="password"
+                  placeholder="xxxx xxxx xxxx xxxx"
+                  style="flex: 1; min-width: 0"
+                />
+                <button
+                  class="btn btn-secondary"
+                  id="btn-save-creds"
+                  style="padding: 7px 12px; font-size: 11.5px; height: 31px; flex-shrink: 0"
+                >
+                  Save
+                </button>
+              </div>
+              <div class="wp-note">WordPress → Users → Security → Application Passwords.</div>
+            </div>
+            <button class="btn btn-primary" id="btn-wp-push" disabled style="margin-top: 4px">
+              Push to WordPress
+            </button>
+          </div>
+        </div>
+
+        <div class="footer">
+          <div class="footer-note" id="convert-footer-note">Ready to convert</div>
+          <button class="btn btn-primary" id="btn-convert" disabled>Convert →</button>
+        </div>
+      </div>
+
+      <!-- ── REVIEW PANEL ───────────────────────────────────────────────── -->
+      <div class="panel" id="panel-review">
+        <div class="panel-scroll">
+          <div id="review-empty" class="empty-state">
+            <div class="empty-icon">🚩</div>
+            <div class="empty-title">No Review Yet</div>
+            <div class="empty-desc">
+              Run a conversion first. Unsupported elements will appear here with fix suggestions.
+            </div>
+          </div>
+
+          <div id="flagged-section" class="hidden">
+            <div class="section-title" id="flagged-summary">0 Items Flagged for Manual Review</div>
+            <div class="flagged-list" id="flagged-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── SETTINGS PANEL ─────────────────────────────────────────────── -->
+      <div class="panel" id="panel-settings">
+        <div class="panel-scroll">
+          <div class="settings-group">
+            <div class="settings-group-title">Layout</div>
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Container max width</div>
+                <div class="setting-desc">Boxed sections cap width (px)</div>
+              </div>
+              <div class="setting-control">
+                <input
+                  class="setting-input"
+                  id="opt-max-width"
+                  type="number"
+                  value="1200"
+                  min="800"
+                  max="2560"
+                  step="40"
+                />
+              </div>
+            </div>
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Max nesting depth</div>
+                <div class="setting-desc">Deeper nodes are exported as images</div>
+              </div>
+              <div class="setting-control">
+                <input
+                  class="setting-input"
+                  id="opt-depth"
+                  type="number"
+                  value="12"
+                  min="4"
+                  max="20"
+                  step="1"
+                />
+              </div>
+            </div>
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Mobile breakpoint</div>
+                <div class="setting-desc">px — applied to font size scaling</div>
+              </div>
+              <div class="setting-control">
+                <input
+                  class="setting-input"
+                  id="opt-mobile-bp"
+                  type="number"
+                  value="767"
+                  min="320"
+                  max="1024"
+                  step="1"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-group-title">Typography</div>
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Infer heading levels</div>
+                <div class="setting-desc">Auto-detect H1–H6 from font size</div>
+              </div>
+              <div class="setting-control">
+                <label class="toggle">
+                  <input type="checkbox" id="opt-infer-headings" checked />
+                  <div class="toggle-track"></div>
+                  <div class="toggle-thumb"></div>
+                </label>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Extract global fonts</div>
+                <div class="setting-desc">Map Figma text styles to Elementor</div>
+              </div>
+              <div class="setting-control">
+                <label class="toggle">
+                  <input type="checkbox" id="opt-global-fonts" checked />
+                  <div class="toggle-track"></div>
+                  <div class="toggle-thumb"></div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-group-title">Colors</div>
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Extract global colors</div>
+                <div class="setting-desc">Map Figma color styles to Elementor kit</div>
+              </div>
+              <div class="setting-control">
+                <label class="toggle">
+                  <input type="checkbox" id="opt-global-colors" checked />
+                  <div class="toggle-track"></div>
+                  <div class="toggle-thumb"></div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Images setting removed as requested -->
+
+          <div class="settings-group">
+            <div class="settings-group-title">Elementor</div>
+            <div class="setting-row">
+              <div>
+                <div class="setting-label">Include Pro widgets</div>
+                <div class="setting-desc">Flip Box, Price Table, Call to Action…</div>
+              </div>
+              <div class="setting-control">
+                <label class="toggle">
+                  <input type="checkbox" id="opt-pro-widgets" checked />
+                  <div class="toggle-track"></div>
+                  <div class="toggle-thumb"></div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer">
+          <div class="footer-note">Settings are applied on each conversion</div>
+          <button class="btn btn-secondary" id="btn-reset-settings">Reset Defaults</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Toast ──────────────────────────────────────────────────────────── -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+      // ─────────────────────────────────────────────────────────────────────────────
+      // State
+      // ─────────────────────────────────────────────────────────────────────────────
+      const state = {
+        hasSelection: false,
+        selectedNodeName: "",
+        selectedNodeId: "",
+        isConverting: false,
+        convertedJson: null,
+        flaggedItems: [],
+        fidelityScore: 0,
+        elementCount: 0,
+      };
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // Tabs
+      // ─────────────────────────────────────────────────────────────────────────────
+      document.querySelectorAll(".tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+          document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+          tab.classList.add("active");
+          const id = "panel-" + tab.dataset.tab;
+          document.getElementById(id)?.classList.add("active");
+        });
+      });
+
+      function switchTo(tabName) {
+        document.querySelectorAll(".tab").forEach((t) => {
+          t.classList.toggle("active", t.dataset.tab === tabName);
+        });
+        document.querySelectorAll(".panel").forEach((p) => {
+          p.classList.toggle("active", p.id === "panel-" + tabName);
+        });
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // Toast
+      // ─────────────────────────────────────────────────────────────────────────────
+      let toastTimer;
+      function showToast(msg, type = "", duration = 3000) {
+        const el = document.getElementById("toast");
+        el.textContent = msg;
+        el.className = "toast show" + (type ? " " + type : "");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          el.className = "toast";
+        }, duration);
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // Selection UI
+      // ─────────────────────────────────────────────────────────────────────────────
+      function updateSelection(hasSelection, name, id) {
+        state.hasSelection = hasSelection;
+        state.selectedNodeName = name || "";
+        state.selectedNodeId = id || "";
+
+        // Analyze tab
+        const dot = document.getElementById("sel-dot");
+        dot.className = "sel-dot " + (hasSelection ? "ok" : "none");
+        document.getElementById("sel-status").textContent = hasSelection
+          ? "Frame selected"
+          : "Select a Frame or Component in Figma";
+        const nameEl = document.getElementById("sel-name");
+        nameEl.textContent = hasSelection ? `"${name}"` : "";
+
+        // Convert tab
+        const dot2 = document.getElementById("sel-dot2");
+        dot2.className = "sel-dot " + (hasSelection ? "ok" : "none");
+        document.getElementById("sel-status2").textContent = hasSelection
+          ? "Ready to convert"
+          : "Select a Frame to convert";
+        document.getElementById("sel-name2").textContent = hasSelection ? `"${name}"` : "";
+
+        // Buttons
+        document.getElementById("btn-analyze").disabled = !hasSelection;
+        document.getElementById("btn-convert").disabled = !hasSelection || state.isConverting;
+        document.getElementById("btn-wp-push").disabled = !state.convertedJson;
+        document.getElementById("analyze-footer-note").textContent = hasSelection
+          ? `"${name}" selected`
+          : "Select a frame first";
+        document.getElementById("convert-footer-note").textContent = hasSelection
+          ? "Click Convert to start"
+          : "Select a frame first";
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // Per-issue step-by-step guides for things the plugin cannot auto-fix
+      // ─────────────────────────────────────────────────────────────────────────────
+      const ISSUE_GUIDES = {
+        OVERLAPPING_LAYERS: [
+          "Open the <strong>Layers panel</strong> (left sidebar).",
+          "Click on each highlighted layer name to select it on the canvas.",
+          "Reorder layers so they stack <em>sequentially</em> without overlap — drag them in the Layers panel.",
+          "If they must overlap (e.g. a badge on a card), select both → right-click → <strong>Flatten</strong> to merge them into one image.",
+        ],
+        MASKS: [
+          "Select the masked layer group (it shows a mask icon in the Layers panel).",
+          "Right-click the group → <strong>Flatten Selection</strong>. This bakes the mask into a single PNG.",
+          "The plugin will then export it as an image instead of trying to convert the mask.",
+        ],
+        GENERIC_NAMES: [
+          "Open the <strong>Layers panel</strong> (left sidebar).",
+          'Double-click a layer name like "Frame 3" or "Group 7" to rename it.',
+          'Use descriptive names like <strong>"Hero Section"</strong>, <strong>"Nav Bar"</strong>, <strong>"Feature Card"</strong>.',
+          "Good names let the plugin and Elementor editor stay readable after import.",
+        ],
+        NO_COLOR_STYLES: [
+          "Select a shape or text that uses one of your brand colors.",
+          "In the <strong>Design panel</strong> (right sidebar), click the color swatch.",
+          'Click the <strong>Style icon</strong> (four dots) → press <strong>"+"</strong> to save it as a color style.',
+          "Repeat for each brand color. The plugin will map these to Elementor Global Colors.",
+        ],
+        NO_TEXT_STYLES: [
+          "Select a text layer (e.g. your main heading).",
+          "In the <strong>Design panel</strong>, click the <strong>Style icon</strong> (four dots) next to the text properties.",
+          'Press <strong>"+"</strong> and name it (e.g. "Heading 1", "Body Text").',
+          "Repeat for each text level. The plugin maps these to Elementor typography presets.",
+        ],
+      };
+
+      const AUTO_FIX_CODES = ["BLUR_EFFECTS", "BLEND_MODES", "ROTATION", "ABSOLUTE_POSITIONING"];
+      const AUTO_FIX_LABELS = {
+        BLUR_EFFECTS: "⚡ Remove Blurs",
+        BLEND_MODES: "⚡ Reset Blend Modes",
+        ROTATION: "⚡ Reset Rotation to 0°",
+        ABSOLUTE_POSITIONING: "⚡ Fix Positioning",
+      };
+      const AUTO_FIX_WHAT = {
+        BLUR_EFFECTS:
+          "Strips the blur/background-blur effect from each node so Elementor can render it.",
+        BLEND_MODES: "Resets the layer blend mode to Normal so colours match in Elementor.",
+        ROTATION: "Sets rotation to 0° — rotated frames break Elementor's flex layout.",
+        ABSOLUTE_POSITIONING: "Switches absolute-positioned children back to auto-layout flow.",
+      };
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // Preflight Results
+      // ─────────────────────────────────────────────────────────────────────────────
+      function zoomToNodes(nodeIds) {
+        parent.postMessage({ pluginMessage: { type: "select-nodes", nodeIds } }, "*");
+      }
+
+      function sendFix(code, nodeIds) {
+        parent.postMessage(
+          { pluginMessage: { type: "fix-issue", code, nodeIds, options: getOptions() } },
+          "*",
+        );
+      }
+
+      function renderPreflightReport(report) {
+        document.getElementById("analyze-empty").classList.add("hidden");
+        document.getElementById("score-section").classList.remove("hidden");
+
+        const score = report.score;
+        const circumference = 163.36;
+        const arc = document.getElementById("score-arc");
+        arc.style.strokeDashoffset = circumference - (score / 100) * circumference;
+
+        const colors = score >= 80 ? "#10B981" : score >= 60 ? "#F59E0B" : "#EF4444";
+        arc.style.stroke = colors;
+        document.getElementById("score-num").textContent = score;
+        document.getElementById("score-num").style.color = colors;
+        document.getElementById("score-grade").textContent = report.grade;
+
+        const descs = {
+          A: "Excellent — high fidelity expected",
+          B: "Good — minor manual fixes",
+          C: "Fair — some rework needed",
+          D: "Poor — significant issues",
+          F: "Very Low — major restructure recommended",
+        };
+        document.getElementById("score-desc").textContent = descs[report.grade] || "";
+        document.getElementById("stat-nodes").textContent = report.totalNodes;
+        document.getElementById("stat-auto").textContent =
+          `${report.autoLayoutNodes} (${Math.round((report.autoLayoutNodes / Math.max(1, report.totalNodes)) * 100)}%)`;
+        document.getElementById("stat-issues").textContent = report.issues.length;
+
+        const issueList = document.getElementById("issue-list");
+        issueList.innerHTML = "";
+        const fixAllBtn = document.getElementById("fix-all-btn");
+
+        if (report.issues.length === 0) {
+          document.getElementById("issues-section").classList.remove("hidden");
+          fixAllBtn.classList.add("hidden");
+          issueList.innerHTML = `<div style="text-align:center;padding:16px;color:var(--good);font-size:11.5px;font-weight:600;">✅ No issues found — ready to convert!</div>`;
+          return;
+        }
+
+        // Collect all auto-fixable node IDs grouped by code for the Fix All button
+        const fixAllMap = {};
+        report.issues.forEach((issue) => {
+          if (AUTO_FIX_CODES.includes(issue.code) && issue.affectedNodes.length > 0) {
+            fixAllMap[issue.code] = issue.affectedNodes.map((n) => n.id);
+          }
+        });
+        const hasAnyAutoFix = Object.keys(fixAllMap).length > 0;
+
+        if (hasAnyAutoFix) {
+          fixAllBtn.classList.remove("hidden");
+          fixAllBtn.onclick = function () {
+            this.disabled = true;
+            this.textContent = "Fixing…";
+            // Fire each fix sequentially via a small queue
+            const entries = Object.entries(fixAllMap);
+            let i = 0;
+            function next() {
+              if (i >= entries.length) return;
+              const [code, nodeIds] = entries[i++];
+              sendFix(code, nodeIds);
+            }
+            // Only the last fix-result will re-render; fire all at once is fine because
+            // code.ts processes them sequentially via the message queue.
+            entries.forEach(([code, nodeIds]) => sendFix(code, nodeIds));
+          };
+        } else {
+          fixAllBtn.classList.add("hidden");
+        }
+
+        document.getElementById("issues-section").classList.remove("hidden");
+        const icons = { error: "🔴", warning: "🟡", info: "🔵" };
+
+        report.issues.forEach((issue) => {
+          const hasNodes = issue.affectedNodes && issue.affectedNodes.length > 0;
+          const canAutoFix = AUTO_FIX_CODES.includes(issue.code) && hasNodes;
+          const guide = ISSUE_GUIDES[issue.code];
+
+          const item = document.createElement("div");
+          item.className = `issue-item severity-${issue.severity}`;
+          item.dataset.code = issue.code;
+
+          // Build clickable node chips
+          let nodesHtml = "";
+          if (hasNodes) {
+            const chips = issue.affectedNodes
+              .slice(0, 8)
+              .map(
+                (n) =>
+                  `<button class="node-chip" data-id="${escHtml(n.id)}" title="Click to zoom to this layer in Figma">${escHtml(n.name)}</button>`,
+              )
+              .join("");
+            const more =
+              issue.affectedNodes.length > 8
+                ? `<span style="font-size:9.5px;color:var(--text3);">+${issue.affectedNodes.length - 8} more</span>`
+                : "";
+            nodesHtml = `<div style="margin-top:6px;margin-bottom:2px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;">${chips}${more}</div>`;
+          }
+
+          // Build "What will this fix?" explanation for auto-fixable issues
+          const whatHtml = canAutoFix
+            ? `<div style="margin-top:4px;font-size:9.5px;color:var(--text3);line-height:1.4;">💡 ${escHtml(AUTO_FIX_WHAT[issue.code])}</div>`
+            : "";
+
+          // Build step-by-step guide for manual issues
+          let guideHtml = "";
+          if (!canAutoFix && guide) {
+            const steps = guide
+              .map(
+                (s, i) =>
+                  `<div class="guide-step"><div class="guide-step-num">${i + 1}</div><div>${s}</div></div>`,
+              )
+              .join("");
+            guideHtml = `
         <div class="issue-guide">
           <button class="issue-guide-toggle">📋 How to fix this in Figma <span class="arrow">▶</span></button>
           <div class="issue-guide-steps">${steps}</div>
         </div>`;
-    }
+          }
 
-    // Actions row
-    let actionsHtml = '<div class="issue-actions">';
-    if (canAutoFix) {
-      actionsHtml += `<button class="issue-fix-btn">${AUTO_FIX_LABELS[issue.code]}</button>`;
-    }
-    if (hasNodes) {
-      actionsHtml += `<button class="issue-zoom-btn">↗ Zoom to layers</button>`;
-    }
-    actionsHtml += '</div>';
+          // Actions row
+          let actionsHtml = '<div class="issue-actions">';
+          if (canAutoFix) {
+            actionsHtml += `<button class="issue-fix-btn">${AUTO_FIX_LABELS[issue.code]}</button>`;
+          }
+          if (hasNodes) {
+            actionsHtml += `<button class="issue-zoom-btn">↗ Zoom to layers</button>`;
+          }
+          actionsHtml += "</div>";
 
-    item.innerHTML = `
-      <div class="issue-icon">${icons[issue.severity] || '⚪'}</div>
+          item.innerHTML = `
+      <div class="issue-icon">${icons[issue.severity] || "⚪"}</div>
       <div class="issue-content" style="flex:1;min-width:0;">
         <div class="issue-title">${escHtml(issue.title)}</div>
         <div class="issue-desc">${escHtml(issue.description)}</div>
@@ -1139,108 +1700,115 @@ function renderPreflightReport(report) {
       </div>
     `;
 
-    // Wire up node chips — each chip zooms to that single layer
-    item.querySelectorAll('.node-chip').forEach(chip => {
-      chip.addEventListener('click', () => zoomToNodes([chip.dataset.id]));
-    });
+          // Wire up node chips — each chip zooms to that single layer
+          item.querySelectorAll(".node-chip").forEach((chip) => {
+            chip.addEventListener("click", () => zoomToNodes([chip.dataset.id]));
+          });
 
-    // Wire up guide toggle
-    const toggle = item.querySelector('.issue-guide-toggle');
-    if (toggle) {
-      toggle.addEventListener('click', function() {
-        this.classList.toggle('open');
-        this.nextElementSibling.classList.toggle('open');
-      });
-    }
+          // Wire up guide toggle
+          const toggle = item.querySelector(".issue-guide-toggle");
+          if (toggle) {
+            toggle.addEventListener("click", function () {
+              this.classList.toggle("open");
+              this.nextElementSibling.classList.toggle("open");
+            });
+          }
 
-    // Wire up auto-fix button
-    if (canAutoFix) {
-      item.querySelector('.issue-fix-btn').addEventListener('click', function() {
-        this.disabled = true;
-        this.textContent = 'Fixing…';
-        sendFix(issue.code, issue.affectedNodes.map(n => n.id));
-      });
-    }
+          // Wire up auto-fix button
+          if (canAutoFix) {
+            item.querySelector(".issue-fix-btn").addEventListener("click", function () {
+              this.disabled = true;
+              this.textContent = "Fixing…";
+              sendFix(
+                issue.code,
+                issue.affectedNodes.map((n) => n.id),
+              );
+            });
+          }
 
-    // Wire up zoom-to-all button
-    if (hasNodes) {
-      item.querySelector('.issue-zoom-btn').addEventListener('click', () => {
-        zoomToNodes(issue.affectedNodes.map(n => n.id));
-      });
-    }
+          // Wire up zoom-to-all button
+          if (hasNodes) {
+            item.querySelector(".issue-zoom-btn").addEventListener("click", () => {
+              zoomToNodes(issue.affectedNodes.map((n) => n.id));
+            });
+          }
 
-    issueList.appendChild(item);
-  });
-}
+          issueList.appendChild(item);
+        });
+      }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Conversion Progress
-// ─────────────────────────────────────────────────────────────────────────────
-function setProgress(step, percent) {
-  const section = document.getElementById('progress-section');
-  section.classList.remove('hidden');
-  document.getElementById('result-section').classList.add('hidden');
-  document.getElementById('progress-step').textContent = step;
-  const fill = document.getElementById('progress-fill');
-  fill.style.width = percent + '%';
-}
+      // ─────────────────────────────────────────────────────────────────────────────
+      // Conversion Progress
+      // ─────────────────────────────────────────────────────────────────────────────
+      function setProgress(step, percent) {
+        const section = document.getElementById("progress-section");
+        section.classList.remove("hidden");
+        document.getElementById("result-section").classList.add("hidden");
+        document.getElementById("progress-step").textContent = step;
+        const fill = document.getElementById("progress-fill");
+        fill.style.width = percent + "%";
+      }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Conversion Complete
-// ─────────────────────────────────────────────────────────────────────────────
-function renderConversionResult(json, flaggedCount, fidelityScore) {
-  state.convertedJson = json;
-  state.fidelityScore = fidelityScore;
-  state.elementCount = 0; // not sent separately yet
-  state.isConverting = false;
+      // ─────────────────────────────────────────────────────────────────────────────
+      // Conversion Complete
+      // ─────────────────────────────────────────────────────────────────────────────
+      function renderConversionResult(json, flaggedCount, fidelityScore) {
+        state.convertedJson = json;
+        state.fidelityScore = fidelityScore;
+        state.elementCount = 0; // not sent separately yet
+        state.isConverting = false;
 
-  document.getElementById('progress-section').classList.add('hidden');
-  document.getElementById('result-section').classList.remove('hidden');
+        document.getElementById("progress-section").classList.add("hidden");
+        document.getElementById("result-section").classList.remove("hidden");
 
-  document.getElementById('r-score').textContent = fidelityScore + '%';
-  document.getElementById('r-flagged').textContent = flaggedCount;
+        document.getElementById("r-score").textContent = fidelityScore + "%";
+        document.getElementById("r-flagged").textContent = flaggedCount;
 
-  const bar = document.getElementById('r-bar');
-  bar.style.width = fidelityScore + '%';
-  document.getElementById('r-bar-val').textContent = fidelityScore + '%';
+        const bar = document.getElementById("r-bar");
+        bar.style.width = fidelityScore + "%";
+        document.getElementById("r-bar-val").textContent = fidelityScore + "%";
 
-  if (fidelityScore >= 80) bar.style.background = 'linear-gradient(90deg,#10B981,#34D399)';
-  else if (fidelityScore >= 60) bar.style.background = 'linear-gradient(90deg,#F59E0B,#FCD34D)';
-  else bar.style.background = 'linear-gradient(90deg,#EF4444,#F87171)';
+        if (fidelityScore >= 80) bar.style.background = "linear-gradient(90deg,#10B981,#34D399)";
+        else if (fidelityScore >= 60)
+          bar.style.background = "linear-gradient(90deg,#F59E0B,#FCD34D)";
+        else bar.style.background = "linear-gradient(90deg,#EF4444,#F87171)";
 
-  document.getElementById('btn-wp-push').disabled = false;
-  document.getElementById('btn-convert').disabled = !state.hasSelection;
-  document.getElementById('convert-footer-note').textContent = `Conversion complete — ${fidelityScore}% fidelity`;
-}
+        document.getElementById("btn-wp-push").disabled = false;
+        document.getElementById("btn-convert").disabled = !state.hasSelection;
+        document.getElementById("convert-footer-note").textContent =
+          `Conversion complete — ${fidelityScore}% fidelity`;
+      }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Flagged Items (Review Panel)
-// ─────────────────────────────────────────────────────────────────────────────
-function renderFlaggedItems(flagged) {
-  state.flaggedItems = flagged;
+      // ─────────────────────────────────────────────────────────────────────────────
+      // Flagged Items (Review Panel)
+      // ─────────────────────────────────────────────────────────────────────────────
+      function renderFlaggedItems(flagged) {
+        state.flaggedItems = flagged;
 
-  const empty = document.getElementById('review-empty');
-  const section = document.getElementById('flagged-section');
+        const empty = document.getElementById("review-empty");
+        const section = document.getElementById("flagged-section");
 
-  if (!flagged || flagged.length === 0) {
-    section.classList.add('hidden');
-    empty.classList.remove('hidden');
-    empty.querySelector('.empty-title').textContent = 'No Issues';
-    empty.querySelector('.empty-desc').textContent = 'All elements converted successfully with native Elementor widgets.';
-    return;
-  }
+        if (!flagged || flagged.length === 0) {
+          section.classList.add("hidden");
+          empty.classList.remove("hidden");
+          empty.querySelector(".empty-title").textContent = "No Issues";
+          empty.querySelector(".empty-desc").textContent =
+            "All elements converted successfully with native Elementor widgets.";
+          return;
+        }
 
-  empty.classList.add('hidden');
-  section.classList.remove('hidden');
-  document.getElementById('flagged-summary').textContent = `${flagged.length} Item${flagged.length !== 1 ? 's' : ''} Flagged for Manual Review`;
+        empty.classList.add("hidden");
+        section.classList.remove("hidden");
+        document.getElementById("flagged-summary").textContent =
+          `${flagged.length} Item${flagged.length !== 1 ? "s" : ""} Flagged for Manual Review`;
 
-  const list = document.getElementById('flagged-list');
-  list.innerHTML = '';
+        const list = document.getElementById("flagged-list");
+        list.innerHTML = "";
 
-  flagged.forEach(item => {
-    const el = document.createElement('div');
-    el.className = 'flagged-item';
-    el.innerHTML = `
+        flagged.forEach((item) => {
+          const el = document.createElement("div");
+          el.className = "flagged-item";
+          el.innerHTML = `
       <div class="flagged-item-header">
         <div class="flagged-item-name">${escHtml(item.node_name)}</div>
         <div class="flagged-cat ${item.category}">${item.category}</div>
@@ -1248,295 +1816,332 @@ function renderFlaggedItems(flagged) {
       <div class="flagged-reason">${escHtml(item.reason)}</div>
       <div class="flagged-fix">${escHtml(item.nearest_native)}</div>
     `;
-    list.appendChild(el);
-  });
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Settings
-// ─────────────────────────────────────────────────────────────────────────────
-function getOptions() {
-  return {
-    containerMaxWidth: parseInt(document.getElementById('opt-max-width').value) || 1200,
-    maxDepth: parseInt(document.getElementById('opt-depth').value) || 12,
-    mobileBreakpoint: parseInt(document.getElementById('opt-mobile-bp').value) || 767,
-    inferHeadings: document.getElementById('opt-infer-headings').checked,
-    useGlobalFonts: document.getElementById('opt-global-fonts').checked,
-    useGlobalColors: document.getElementById('opt-global-colors').checked,
-    exportImages: false,
-    imageFormat: 'PNG',
-    imageScale: 2,
-    includeProWidgets: document.getElementById('opt-pro-widgets').checked,
-    tabletBreakpoint: 1024,
-    skipHeaderFooter: document.getElementById('opt-skip-hf').checked,
-  };
-}
-
-function triggerSaveSettings() {
-  const settings = {
-    options: getOptions(),
-    wpUrl: document.getElementById('wp-url').value,
-    wpUser: document.getElementById('wp-user').value,
-    wpPass: document.getElementById('wp-pass').value,
-  };
-  parent.postMessage({ pluginMessage: { type: 'save-settings', settings } }, '*');
-}
-
-// Auto-save settings on change
-document.querySelectorAll('.setting-input, .setting-select, input[type="checkbox"], .wp-input').forEach(input => {
-  input.addEventListener('change', triggerSaveSettings);
-});
-
-document.getElementById('btn-save-creds').addEventListener('click', () => {
-  triggerSaveSettings();
-  showToast('Credentials saved globally ✓', 'success');
-});
-
-document.getElementById('btn-reset-settings').addEventListener('click', () => {
-  document.getElementById('opt-max-width').value = '1200';
-  document.getElementById('opt-depth').value = '12';
-  document.getElementById('opt-mobile-bp').value = '767';
-  document.getElementById('opt-infer-headings').checked = true;
-  document.getElementById('opt-global-fonts').checked = true;
-  document.getElementById('opt-global-colors').checked = true;
-  document.getElementById('opt-infer-headings').checked = true;
-  document.getElementById('opt-global-fonts').checked = true;
-  document.getElementById('opt-global-colors').checked = true;
-  document.getElementById('opt-pro-widgets').checked = true;
-  document.getElementById('opt-skip-hf').checked = false;
-  triggerSaveSettings();
-  showToast('Settings reset to defaults');
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Button Actions
-// ─────────────────────────────────────────────────────────────────────────────
-document.getElementById('btn-analyze').addEventListener('click', () => {
-  parent.postMessage({ pluginMessage: { type: 'analyze', options: getOptions() } }, '*');
-  document.getElementById('analyze-empty').classList.add('hidden');
-  document.getElementById('score-section').classList.add('hidden');
-  document.getElementById('issues-section').classList.add('hidden');
-  showToast('Running analysis…');
-});
-
-document.getElementById('btn-convert').addEventListener('click', () => {
-  if (!state.hasSelection) return;
-  state.isConverting = true;
-  document.getElementById('btn-convert').disabled = true;
-  document.getElementById('convert-footer-note').textContent = 'Converting…';
-  setProgress('Initializing conversion…', 5);
-
-  parent.postMessage({
-    pluginMessage: { type: 'convert', options: getOptions() }
-  }, '*');
-});
-
-document.getElementById('btn-download').addEventListener('click', () => {
-  if (!state.convertedJson) { showToast('No conversion yet', 'error'); return; }
-
-  const blob = new Blob([state.convertedJson], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = (state.selectedNodeName || 'elementor-template').replace(/[^a-z0-9]/gi, '-').toLowerCase() + '.json';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('JSON downloaded!', 'success');
-});
-
-document.getElementById('btn-review-link').addEventListener('click', () => {
-  switchTo('review');
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// WordPress Push
-// ─────────────────────────────────────────────────────────────────────────────
-document.getElementById('btn-wp-push').addEventListener('click', async () => {
-  if (!state.convertedJson) { showToast('Convert first', 'error'); return; }
-
-  const siteUrl = document.getElementById('wp-url').value.trim().replace(/\/$/, '');
-  const appUser = document.getElementById('wp-user').value.trim();
-  const appPass = document.getElementById('wp-pass').value.trim();
-
-  if (!siteUrl) { showToast('Enter your site URL', 'error'); return; }
-  if (!appUser) { showToast('Enter your username', 'error'); return; }
-  if (!appPass) { showToast('Enter your application password', 'error'); return; }
-
-  const btn = document.getElementById('btn-wp-push');
-  btn.disabled = true;
-  btn.textContent = 'Pushing…';
-
-  try {
-    const templateData = JSON.parse(state.convertedJson);
-    const pageName = templateData.title || state.selectedNodeName || 'Figma Import';
-
-    // Create a new page draft with the template content
-    const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Basic ' + btoa(appUser + ':' + appPass),
-    };
-
-    // Push to WP pages endpoint
-    const response = await fetch(`${siteUrl}/wp-json/wp/v2/pages`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        title: pageName,
-        status: 'draft',
-        meta: {
-          _elementor_data: state.convertedJson,
-          _elementor_edit_mode: 'builder',
-          _elementor_template_type: 'page',
-          _elementor_version: '3.0.0',
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.message || `HTTP ${response.status}`);
-    }
-
-    const result = await response.json();
-    showToast('Page created! Opening in WP…', 'success');
-
-    // Open the page in Elementor editor
-    if (result.id) {
-      setTimeout(() => {
-        window.open(`${siteUrl}/wp-admin/post.php?post=${result.id}&action=elementor`, '_blank');
-      }, 1500);
-    }
-
-  } catch (err) {
-    console.error(err);
-    showToast(`Push failed: ${err.message}`, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Push to WordPress';
-  }
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Plugin Messages
-// ─────────────────────────────────────────────────────────────────────────────
-window.onmessage = (event) => {
-  const msg = event.data.pluginMessage;
-  if (!msg) return;
-
-  switch (msg.type) {
-
-    case 'selection-changed':
-      updateSelection(msg.hasSelection, msg.nodeName, msg.nodeId);
-      break;
-
-    case 'load-settings':
-      const s = msg.settings;
-      if (!s) break;
-      if (s.options) {
-        if (s.options.containerMaxWidth) document.getElementById('opt-max-width').value = s.options.containerMaxWidth;
-        if (s.options.maxDepth) document.getElementById('opt-depth').value = s.options.maxDepth;
-        if (s.options.mobileBreakpoint) document.getElementById('opt-mobile-bp').value = s.options.mobileBreakpoint;
-        if (s.options.inferHeadings !== undefined) document.getElementById('opt-infer-headings').checked = s.options.inferHeadings;
-        if (s.options.useGlobalFonts !== undefined) document.getElementById('opt-global-fonts').checked = s.options.useGlobalFonts;
-        if (s.options.useGlobalColors !== undefined) document.getElementById('opt-global-colors').checked = s.options.useGlobalColors;
-        if (s.options.includeProWidgets !== undefined) document.getElementById('opt-pro-widgets').checked = s.options.includeProWidgets;
-        if (s.options.skipHeaderFooter !== undefined) document.getElementById('opt-skip-hf').checked = s.options.skipHeaderFooter;
-      }
-      if (s.wpUrl) document.getElementById('wp-url').value = s.wpUrl;
-      if (s.wpUser) document.getElementById('wp-user').value = s.wpUser;
-      if (s.wpPass) document.getElementById('wp-pass').value = s.wpPass;
-      break;
-
-    case 'preflight-result':
-      renderPreflightReport(msg.report);
-      showToast(`Analysis complete — Grade ${msg.report.grade} (${msg.report.score}/100)`,
-        msg.report.score >= 70 ? 'success' : '');
-      break;
-
-    case 'fix-result': {
-      const fixLabel = {
-        BLUR_EFFECTS: 'blur effects removed',
-        BLEND_MODES: 'blend modes reset',
-        ROTATION: 'rotations reset to 0°',
-        ABSOLUTE_POSITIONING: 'positioning fixed',
-      };
-      const label = fixLabel[msg.code] || 'issues fixed';
-      if (msg.fixed > 0) {
-        showToast(`✓ ${msg.fixed} node(s) — ${label}. Score updated.`, 'success');
-      } else {
-        showToast('Nothing could be changed — layers may be locked or already fixed.', '');
-      }
-      renderPreflightReport(msg.report);
-      break;
-    }
-
-    case 'conversion-progress':
-      setProgress(msg.step, msg.percent);
-      break;
-
-    case 'conversion-complete': {
-      renderConversionResult(msg.json, msg.flaggedCount, msg.fidelityScore);
-
-      // Parse flagged items from JSON and show in review
-      try {
-        const parsed = JSON.parse(msg.json);
-        renderFlaggedItems(parsed.metadata?.flagged_items || []);
-        const elCount = countJsonElements(parsed.content || []);
-        document.getElementById('r-elements').textContent = elCount;
-      } catch(e) {}
-
-      showToast(`Done! ${msg.fidelityScore}% fidelity · ${msg.flaggedCount} flagged`, 'success');
-      break;
-    }
-
-    case 'images-exported':
-      if (msg.images && msg.images.length > 0) {
-        msg.images.forEach(img => {
-          const blob = new Blob([new Uint8Array(img.data)], { type: 'image/png' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = img.filename;
-          a.click();
-          URL.revokeObjectURL(url);
+          list.appendChild(el);
         });
-        showToast(`${msg.images.length} image(s) exported`, 'success');
       }
-      break;
 
-    case 'conversion-error':
-      state.isConverting = false;
-      document.getElementById('btn-convert').disabled = !state.hasSelection;
-      document.getElementById('progress-section').classList.add('hidden');
-      showToast(msg.error, 'error', 8000);
-      break;
+      // ─────────────────────────────────────────────────────────────────────────────
+      // Settings
+      // ─────────────────────────────────────────────────────────────────────────────
+      function getOptions() {
+        return {
+          containerMaxWidth: parseInt(document.getElementById("opt-max-width").value) || 1200,
+          maxDepth: parseInt(document.getElementById("opt-depth").value) || 12,
+          mobileBreakpoint: parseInt(document.getElementById("opt-mobile-bp").value) || 767,
+          inferHeadings: document.getElementById("opt-infer-headings").checked,
+          useGlobalFonts: document.getElementById("opt-global-fonts").checked,
+          useGlobalColors: document.getElementById("opt-global-colors").checked,
+          exportImages: false,
+          imageFormat: "PNG",
+          imageScale: 2,
+          includeProWidgets: document.getElementById("opt-pro-widgets").checked,
+          tabletBreakpoint: 1024,
+          skipHeaderFooter: document.getElementById("opt-skip-hf").checked,
+        };
+      }
 
-    case 'log':
-      // Silently logged
-      break;
-  }
-};
+      function triggerSaveSettings() {
+        const settings = {
+          options: getOptions(),
+          wpUrl: document.getElementById("wp-url").value,
+          wpUser: document.getElementById("wp-user").value,
+          wpPass: document.getElementById("wp-pass").value,
+        };
+        parent.postMessage({ pluginMessage: { type: "save-settings", settings } }, "*");
+      }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Utilities
-// ─────────────────────────────────────────────────────────────────────────────
-function escHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
+      // Auto-save settings on change
+      document
+        .querySelectorAll('.setting-input, .setting-select, input[type="checkbox"], .wp-input')
+        .forEach((input) => {
+          input.addEventListener("change", triggerSaveSettings);
+        });
 
-function countJsonElements(elements) {
-  let n = 0;
-  for (const el of (elements || [])) {
-    n++;
-    if (el.elements) n += countJsonElements(el.elements);
-  }
-  return n;
-}
-</script>
-</body>
+      document.getElementById("btn-save-creds").addEventListener("click", () => {
+        triggerSaveSettings();
+        showToast("Credentials saved globally ✓", "success");
+      });
+
+      document.getElementById("btn-reset-settings").addEventListener("click", () => {
+        document.getElementById("opt-max-width").value = "1200";
+        document.getElementById("opt-depth").value = "12";
+        document.getElementById("opt-mobile-bp").value = "767";
+        document.getElementById("opt-infer-headings").checked = true;
+        document.getElementById("opt-global-fonts").checked = true;
+        document.getElementById("opt-global-colors").checked = true;
+        document.getElementById("opt-infer-headings").checked = true;
+        document.getElementById("opt-global-fonts").checked = true;
+        document.getElementById("opt-global-colors").checked = true;
+        document.getElementById("opt-pro-widgets").checked = true;
+        document.getElementById("opt-skip-hf").checked = false;
+        triggerSaveSettings();
+        showToast("Settings reset to defaults");
+      });
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // Button Actions
+      // ─────────────────────────────────────────────────────────────────────────────
+      document.getElementById("btn-analyze").addEventListener("click", () => {
+        parent.postMessage({ pluginMessage: { type: "analyze", options: getOptions() } }, "*");
+        document.getElementById("analyze-empty").classList.add("hidden");
+        document.getElementById("score-section").classList.add("hidden");
+        document.getElementById("issues-section").classList.add("hidden");
+        showToast("Running analysis…");
+      });
+
+      document.getElementById("btn-convert").addEventListener("click", () => {
+        if (!state.hasSelection) return;
+        state.isConverting = true;
+        document.getElementById("btn-convert").disabled = true;
+        document.getElementById("convert-footer-note").textContent = "Converting…";
+        setProgress("Initializing conversion…", 5);
+
+        parent.postMessage(
+          {
+            pluginMessage: { type: "convert", options: getOptions() },
+          },
+          "*",
+        );
+      });
+
+      document.getElementById("btn-download").addEventListener("click", () => {
+        if (!state.convertedJson) {
+          showToast("No conversion yet", "error");
+          return;
+        }
+
+        const blob = new Blob([state.convertedJson], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download =
+          (state.selectedNodeName || "elementor-template")
+            .replace(/[^a-z0-9]/gi, "-")
+            .toLowerCase() + ".json";
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast("JSON downloaded!", "success");
+      });
+
+      document.getElementById("btn-review-link").addEventListener("click", () => {
+        switchTo("review");
+      });
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // WordPress Push
+      // ─────────────────────────────────────────────────────────────────────────────
+      document.getElementById("btn-wp-push").addEventListener("click", async () => {
+        if (!state.convertedJson) {
+          showToast("Convert first", "error");
+          return;
+        }
+
+        const siteUrl = document.getElementById("wp-url").value.trim().replace(/\/$/, "");
+        const appUser = document.getElementById("wp-user").value.trim();
+        const appPass = document.getElementById("wp-pass").value.trim();
+
+        if (!siteUrl) {
+          showToast("Enter your site URL", "error");
+          return;
+        }
+        if (!appUser) {
+          showToast("Enter your username", "error");
+          return;
+        }
+        if (!appPass) {
+          showToast("Enter your application password", "error");
+          return;
+        }
+
+        const btn = document.getElementById("btn-wp-push");
+        btn.disabled = true;
+        btn.textContent = "Pushing…";
+
+        try {
+          const templateData = JSON.parse(state.convertedJson);
+          const pageName = templateData.title || state.selectedNodeName || "Figma Import";
+
+          // Create a new page draft with the template content
+          const headers = {
+            "Content-Type": "application/json",
+            Authorization: "Basic " + btoa(appUser + ":" + appPass),
+          };
+
+          // Push to WP pages endpoint
+          const response = await fetch(`${siteUrl}/wp-json/wp/v2/pages`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              title: pageName,
+              status: "draft",
+              meta: {
+                _elementor_data: state.convertedJson,
+                _elementor_edit_mode: "builder",
+                _elementor_template_type: "page",
+                _elementor_version: "3.0.0",
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.message || `HTTP ${response.status}`);
+          }
+
+          const result = await response.json();
+          showToast("Page created! Opening in WP…", "success");
+
+          // Open the page in Elementor editor
+          if (result.id) {
+            setTimeout(() => {
+              window.open(
+                `${siteUrl}/wp-admin/post.php?post=${result.id}&action=elementor`,
+                "_blank",
+              );
+            }, 1500);
+          }
+        } catch (err) {
+          console.error(err);
+          showToast(`Push failed: ${err.message}`, "error");
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Push to WordPress";
+        }
+      });
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // Plugin Messages
+      // ─────────────────────────────────────────────────────────────────────────────
+      window.onmessage = (event) => {
+        const msg = event.data.pluginMessage;
+        if (!msg) return;
+
+        switch (msg.type) {
+          case "selection-changed":
+            updateSelection(msg.hasSelection, msg.nodeName, msg.nodeId);
+            break;
+
+          case "load-settings":
+            const s = msg.settings;
+            if (!s) break;
+            if (s.options) {
+              if (s.options.containerMaxWidth)
+                document.getElementById("opt-max-width").value = s.options.containerMaxWidth;
+              if (s.options.maxDepth)
+                document.getElementById("opt-depth").value = s.options.maxDepth;
+              if (s.options.mobileBreakpoint)
+                document.getElementById("opt-mobile-bp").value = s.options.mobileBreakpoint;
+              if (s.options.inferHeadings !== undefined)
+                document.getElementById("opt-infer-headings").checked = s.options.inferHeadings;
+              if (s.options.useGlobalFonts !== undefined)
+                document.getElementById("opt-global-fonts").checked = s.options.useGlobalFonts;
+              if (s.options.useGlobalColors !== undefined)
+                document.getElementById("opt-global-colors").checked = s.options.useGlobalColors;
+              if (s.options.includeProWidgets !== undefined)
+                document.getElementById("opt-pro-widgets").checked = s.options.includeProWidgets;
+              if (s.options.skipHeaderFooter !== undefined)
+                document.getElementById("opt-skip-hf").checked = s.options.skipHeaderFooter;
+            }
+            if (s.wpUrl) document.getElementById("wp-url").value = s.wpUrl;
+            if (s.wpUser) document.getElementById("wp-user").value = s.wpUser;
+            if (s.wpPass) document.getElementById("wp-pass").value = s.wpPass;
+            break;
+
+          case "preflight-result":
+            renderPreflightReport(msg.report);
+            showToast(
+              `Analysis complete — Grade ${msg.report.grade} (${msg.report.score}/100)`,
+              msg.report.score >= 70 ? "success" : "",
+            );
+            break;
+
+          case "fix-result": {
+            const fixLabel = {
+              BLUR_EFFECTS: "blur effects removed",
+              BLEND_MODES: "blend modes reset",
+              ROTATION: "rotations reset to 0°",
+              ABSOLUTE_POSITIONING: "positioning fixed",
+            };
+            const label = fixLabel[msg.code] || "issues fixed";
+            if (msg.fixed > 0) {
+              showToast(`✓ ${msg.fixed} node(s) — ${label}. Score updated.`, "success");
+            } else {
+              showToast("Nothing could be changed — layers may be locked or already fixed.", "");
+            }
+            renderPreflightReport(msg.report);
+            break;
+          }
+
+          case "conversion-progress":
+            setProgress(msg.step, msg.percent);
+            break;
+
+          case "conversion-complete": {
+            renderConversionResult(msg.json, msg.flaggedCount, msg.fidelityScore);
+
+            // Parse flagged items from JSON and show in review
+            try {
+              const parsed = JSON.parse(msg.json);
+              renderFlaggedItems(parsed.metadata?.flagged_items || []);
+              const elCount = countJsonElements(parsed.content || []);
+              document.getElementById("r-elements").textContent = elCount;
+            } catch (e) {}
+
+            showToast(
+              `Done! ${msg.fidelityScore}% fidelity · ${msg.flaggedCount} flagged`,
+              "success",
+            );
+            break;
+          }
+
+          case "images-exported":
+            if (msg.images && msg.images.length > 0) {
+              msg.images.forEach((img) => {
+                const blob = new Blob([new Uint8Array(img.data)], { type: "image/png" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = img.filename;
+                a.click();
+                URL.revokeObjectURL(url);
+              });
+              showToast(`${msg.images.length} image(s) exported`, "success");
+            }
+            break;
+
+          case "conversion-error":
+            state.isConverting = false;
+            document.getElementById("btn-convert").disabled = !state.hasSelection;
+            document.getElementById("progress-section").classList.add("hidden");
+            showToast(msg.error, "error", 8000);
+            break;
+
+          case "log":
+            // Silently logged
+            break;
+        }
+      };
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // Utilities
+      // ─────────────────────────────────────────────────────────────────────────────
+      function escHtml(str) {
+        if (!str) return "";
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
+      }
+
+      function countJsonElements(elements) {
+        let n = 0;
+        for (const el of elements || []) {
+          n++;
+          if (el.elements) n += countJsonElements(el.elements);
+        }
+        return n;
+      }
+    </script>
+  </body>
 </html>

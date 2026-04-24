@@ -2,8 +2,8 @@
 // colors.ts — Extract Figma color styles and convert fills to hex/rgba strings
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { GlobalColor } from '../types/elementor';
-import { AnalysedFill } from '../types/figma-extended';
+import { GlobalColor } from "../types/elementor";
+import { AnalysedFill } from "../types/figma-extended";
 
 let _colorCounter = 0;
 
@@ -14,7 +14,10 @@ function makeColorId(): string {
 
 /** Convert Figma r,g,b (0–1) to a CSS #rrggbb string */
 export function rgbToHex(r: number, g: number, b: number): string {
-  const toHex = (n: number) => Math.round(n * 255).toString(16).padStart(2, '0');
+  const toHex = (n: number) =>
+    Math.round(n * 255)
+      .toString(16)
+      .padStart(2, "0");
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
@@ -38,55 +41,63 @@ export function applyOpacityOnWhite(hex: string, opacity: number): string {
  * We only look at the topmost visible fill.
  */
 export function analyseFills(fills: readonly Paint[] | Paint[]): AnalysedFill {
-  const visible = [...fills].reverse().find(
-    (f) => f.visible !== false && f.opacity !== 0
-  );
+  const visible = [...fills].reverse().find((f) => f.visible !== false && f.opacity !== 0);
 
   if (!visible) {
-    return { type: 'solid', color: 'transparent', opacity: 0 };
+    return { type: "solid", color: "transparent", opacity: 0 };
   }
 
   const opacity = visible.opacity ?? 1;
 
-  if (visible.type === 'SOLID') {
+  if (visible.type === "SOLID") {
     const { r, g, b } = visible.color;
-    const a = (visible.opacity ?? 1);
+    const a = visible.opacity ?? 1;
     return {
-      type: 'solid',
+      type: "solid",
       color: rgbaToString(r, g, b, a),
       opacity,
     };
   }
 
-  if (visible.type === 'IMAGE') {
+  if (visible.type === "IMAGE") {
     return {
-      type: 'image',
+      type: "image",
       imageRef: visible.imageHash ?? undefined,
       opacity,
     };
   }
 
   if (
-    visible.type === 'GRADIENT_LINEAR' ||
-    visible.type === 'GRADIENT_RADIAL' ||
-    visible.type === 'GRADIENT_ANGULAR'
+    visible.type === "GRADIENT_LINEAR" ||
+    visible.type === "GRADIENT_RADIAL" ||
+    visible.type === "GRADIENT_ANGULAR"
   ) {
     const stops = visible.gradientStops;
     if (stops && stops.length >= 2) {
-      const from = rgbaToString(stops[0].color.r, stops[0].color.g, stops[0].color.b, stops[0].color.a);
-      const to = rgbaToString(stops[stops.length - 1].color.r, stops[stops.length - 1].color.g, stops[stops.length - 1].color.b, stops[stops.length - 1].color.a);
+      const from = rgbaToString(
+        stops[0].color.r,
+        stops[0].color.g,
+        stops[0].color.b,
+        stops[0].color.a,
+      );
+      const to = rgbaToString(
+        stops[stops.length - 1].color.r,
+        stops[stops.length - 1].color.g,
+        stops[stops.length - 1].color.b,
+        stops[stops.length - 1].color.a,
+      );
       // Approximate gradient angle from the transform
       let angle = 135;
-      if (visible.type === 'GRADIENT_LINEAR' && visible.gradientTransform) {
+      if (visible.type === "GRADIENT_LINEAR" && visible.gradientTransform) {
         const [[a, b], [c, d]] = visible.gradientTransform;
         angle = Math.round(Math.atan2(b, a) * (180 / Math.PI));
         if (angle < 0) angle += 360;
       }
-      return { type: 'gradient', colorStop: [from, to], gradientAngle: angle, opacity };
+      return { type: "gradient", colorStop: [from, to], gradientAngle: angle, opacity };
     }
   }
 
-  return { type: 'unsupported', opacity };
+  return { type: "unsupported", opacity };
 }
 
 /**
@@ -100,10 +111,10 @@ export async function extractGlobalColors(): Promise<GlobalColor[]> {
   for (const style of styles) {
     if (!style.paints || style.paints.length === 0) continue;
     const fill = analyseFills(style.paints);
-    if (fill.type !== 'solid' || !fill.color) continue;
+    if (fill.type !== "solid" || !fill.color) continue;
     result.push({
       _id: makeColorId(),
-      title: style.name.replace(/\//g, ' / '),
+      title: style.name.replace(/\//g, " / "),
       color: fill.color,
     });
   }
@@ -115,10 +126,7 @@ export async function extractGlobalColors(): Promise<GlobalColor[]> {
  * Given a hex/rgba color string, find the closest matching global color name.
  * Returns the raw color if no match found.
  */
-export function resolveGlobalColor(
-  color: string,
-  globalColors: GlobalColor[]
-): string {
+export function resolveGlobalColor(color: string, globalColors: GlobalColor[]): string {
   const match = globalColors.find((gc) => gc.color === color);
   return match ? `var(--e-global-color-${match._id})` : color;
 }
