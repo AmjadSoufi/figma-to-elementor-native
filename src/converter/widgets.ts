@@ -33,7 +33,7 @@ import { TextAnalysis, ConversionOptions } from "../types/figma-extended";
 import { textAnalysisToTypography, analyseTextNode } from "./typography";
 import { analyseFills, rgbaToString } from "./colors";
 import { queueImageExport, queueSvgExport, getImageFillHash } from "./assets";
-import { pxToRemSize, remSpacing, REM_ROOT } from "./units";
+import { pxToRemSize, remSpacing } from "./units";
 import {
   checkEffects,
   checkFills,
@@ -67,8 +67,8 @@ function makeSize(size: number, unit: ElementorSize["unit"] = "px"): ElementorSi
 
 function makeBorderRadius(r: number | PluginAPI["mixed"]): ElementorBorderRadius | undefined {
   if (!r || r === figma.mixed) return undefined;
-  const v = String(Math.round(((r as number) / REM_ROOT) * 1000) / 1000);
-  return { top: v, right: v, bottom: v, left: v, unit: "rem", isLinked: true };
+  const v = String(Math.round(r as number));
+  return { top: v, right: v, bottom: v, left: v, unit: "px", isLinked: true };
 }
 
 function makeBorderRadiusCorners(
@@ -77,13 +77,13 @@ function makeBorderRadiusCorners(
   br: number,
   bl: number,
 ): ElementorBorderRadius {
-  const r = (n: number) => String(Math.round((n / REM_ROOT) * 1000) / 1000);
+  const r = (n: number) => String(Math.round(n));
   return {
     top: r(tl),
     right: r(tr),
     bottom: r(br),
     left: r(bl),
-    unit: "rem",
+    unit: "px",
     isLinked: false,
   };
 }

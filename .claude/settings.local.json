@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(npm run *)",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "WebSearch",
+      "WebFetch(domain:developers.elementor.com)",
+      "WebFetch(domain:elementor.com)"
     ]
   }
 }

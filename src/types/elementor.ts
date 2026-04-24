@@ -28,6 +28,15 @@ export interface ElementorBorderRadius {
   isLinked?: boolean;
 }
 
+// Used by Elementor Flexbox Container for gap (column = h-gap, row = v-gap).
+export interface ElementorGap {
+  column: number;
+  row: number;
+  isLinked: boolean;
+  unit: ElementorUnit;
+  size: number;
+}
+
 export interface ElementorBoxShadow {
   horizontal: number;
   vertical: number;
@@ -78,10 +87,9 @@ export interface ElementorContainerSettings {
   // Layout
   flex_direction?: "row" | "column" | "row-reverse" | "column-reverse";
   flex_wrap?: "wrap" | "nowrap";
-  flex_gap?: ElementorSize;
-  flex_gap_column?: ElementorSize;
-  elements_gap?: ElementorSize;
-  gap?: ElementorSize;
+  flex_gap?: ElementorGap;
+  flex_gap_tablet?: ElementorGap;
+  flex_gap_mobile?: ElementorGap;
   justify_content?:
     | "flex-start"
     | "center"
@@ -543,6 +551,7 @@ export interface ElementorWidget {
 export interface ElementorContainer {
   id: string;
   elType: "container";
+  isInner: boolean;
   settings: ElementorContainerSettings;
   elements: ElementorElement[];
 }

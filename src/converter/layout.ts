@@ -3,7 +3,12 @@
 // Container settings (flex/grid direction, gap, padding, alignment).
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { ElementorContainerSettings, ElementorSize, ElementorSpacing } from "../types/elementor";
+import {
+  ElementorContainerSettings,
+  ElementorSize,
+  ElementorSpacing,
+  ElementorGap,
+} from "../types/elementor";
 import { LayoutAnalysis, AnalysedFill } from "../types/figma-extended";
 import { ConversionOptions } from "../types/figma-extended";
 import { pxSpacing } from "./units";
@@ -330,9 +335,11 @@ function makeSize(size: number, unit: ElementorSize["unit"] = "px"): ElementorSi
   return { unit, size: Math.round(size) };
 }
 
-/** Gap as px — Elementor renders gap verbatim, px matches Figma exactly. */
-function pxGap(px: number): ElementorSize {
-  return { unit: "px", size: Math.round(px) };
+/** Build Elementor's flex_gap object. Requires column + row + isLinked fields. */
+function pxGap(px: number, rowPx = px): ElementorGap {
+  const col = Math.round(px);
+  const row = Math.round(rowPx);
+  return { column: col, row, isLinked: col === row, unit: "px", size: col };
 }
 
 /**
@@ -395,12 +402,11 @@ export function buildContainerSettings(
     settings.flex_wrap = layout.isWrap ? "wrap" : "nowrap";
     settings.justify_content = layout.primaryAxisAlign;
     settings.align_items = layout.crossAxisAlign;
-    if (layout.gap > 0) {
-      settings.flex_gap = pxGap(layout.gap);
-      settings.elements_gap = pxGap(layout.gap);
-    }
-    if (layout.isWrap && layout.gapColumn !== layout.gap) {
-      settings.flex_gap_column = pxGap(layout.gapColumn);
+    if (layout.gap > 0 || layout.gapColumn > 0) {
+      // For wrap rows, column = h-gap between items, row = v-gap between lines.
+      const hGap = layout.gap;
+      const vGap = layout.isWrap ? layout.gapColumn || layout.gap : layout.gap;
+      settings.flex_gap = pxGap(hGap, vGap);
     }
   } else if (layout.direction === "column") {
     settings.flex_direction = "column";
@@ -409,7 +415,6 @@ export function buildContainerSettings(
       settings.align_items = layout.crossAxisAlign;
       if (layout.gap > 0) {
         settings.flex_gap = pxGap(layout.gap);
-        settings.elements_gap = pxGap(layout.gap);
       }
     }
   } else {
@@ -434,10 +439,10 @@ export function buildContainerSettings(
       Math.round(layout.paddingLeft * 0.75),
     );
     settings.padding_mobile = makeSpacing(
-      Math.min(layout.paddingTop, 20),
-      Math.min(layout.paddingRight, 16),
-      Math.min(layout.paddingBottom, 20),
-      Math.min(layout.paddingLeft, 16),
+      Math.max(Math.round(layout.paddingTop * 0.5), Math.min(layout.paddingTop, 8)),
+      Math.max(Math.round(layout.paddingRight * 0.5), Math.min(layout.paddingRight, 8)),
+      Math.max(Math.round(layout.paddingBottom * 0.5), Math.min(layout.paddingBottom, 8)),
+      Math.max(Math.round(layout.paddingLeft * 0.5), Math.min(layout.paddingLeft, 8)),
     );
   }
 

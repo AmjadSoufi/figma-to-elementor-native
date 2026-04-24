@@ -212,26 +212,24 @@ function buildContainer(
     // Fix: after buildContainerSettings sets html_tag to 'div', update from real name
     settings.html_tag = inferHtmlTag(node.name);
 
-    // Corner radius — rem for accessibility.
     const cr = "cornerRadius" in node ? node.cornerRadius : undefined;
     if (cr && cr !== figma.mixed && cr !== 0) {
-      const v = String(Math.round(((cr as number) / 16) * 1000) / 1000);
-      settings.border_radius = { top: v, right: v, bottom: v, left: v, unit: "rem" };
+      const v = String(Math.round(cr as number));
+      settings.border_radius = { top: v, right: v, bottom: v, left: v, unit: "px" };
       settings.overflow = "hidden";
     } else if ("topLeftRadius" in node) {
       const f = node as FrameNode;
-      const tl = (f.topLeftRadius ?? 0) / 16;
-      const tr = (f.topRightRadius ?? 0) / 16;
-      const br = (f.bottomRightRadius ?? 0) / 16;
-      const bl = (f.bottomLeftRadius ?? 0) / 16;
+      const tl = f.topLeftRadius ?? 0;
+      const tr = f.topRightRadius ?? 0;
+      const br = f.bottomRightRadius ?? 0;
+      const bl = f.bottomLeftRadius ?? 0;
       if (tl + tr + br + bl > 0) {
-        const r = (n: number) => String(Math.round(n * 1000) / 1000);
         settings.border_radius = {
-          top: r(tl),
-          right: r(tr),
-          bottom: r(br),
-          left: r(bl),
-          unit: "rem",
+          top: String(Math.round(tl)),
+          right: String(Math.round(tr)),
+          bottom: String(Math.round(br)),
+          left: String(Math.round(bl)),
+          unit: "px",
         };
         settings.overflow = "hidden";
       }
@@ -328,14 +326,15 @@ function buildContainer(
     };
     if (isTopLevel || isBreakout) settings.content_width = "full";
     if (groupLayout.gap > 0) {
-      settings.flex_gap = { unit: "px", size: Math.round(groupLayout.gap) };
-      settings.elements_gap = { unit: "px", size: Math.round(groupLayout.gap) };
+      const g = Math.round(groupLayout.gap);
+      settings.flex_gap = { column: g, row: g, isLinked: true, unit: "px", size: g };
     }
   }
 
   return {
     id,
     elType: "container",
+    isInner: !isTopLevel,
     settings,
     elements,
   };
@@ -448,6 +447,7 @@ export function convertNode(
         return {
           id,
           elType: "container",
+          isInner: !isTopLevel,
           settings: {
             flex_direction: "column",
             background_background: "classic",
