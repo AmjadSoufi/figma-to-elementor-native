@@ -61,7 +61,19 @@ export function isItalicStyle(style: string): boolean {
  * Handles mixed styles by reading the dominant/first segment.
  */
 export function analyseTextNode(node: TextNode, inferHeadings: boolean): TextAnalysis {
-  const fontSize = typeof node.fontSize === "number" ? node.fontSize : 16;
+  // For mixed-style text, use the largest font size so heading inference works correctly.
+  let fontSize = 16;
+  if (typeof node.fontSize === "number") {
+    fontSize = node.fontSize;
+  } else {
+    try {
+      const segs = node.getStyledTextSegments(["fontSize"]);
+      if (segs.length > 0) fontSize = Math.max(...segs.map((s) => s.fontSize as number));
+    } catch {
+      fontSize = 16;
+    }
+  }
+
   const fontNameVal = node.fontName;
   const fontName: FontName =
     typeof fontNameVal === "symbol" ? { family: "Inter", style: "Regular" } : fontNameVal;

@@ -102,6 +102,7 @@ export interface ElementorContainerSettings {
 
   // Content width
   content_width?: "boxed" | "full";
+  boxed_width?: ElementorSize;
   width?: ElementorSize;
   width_tablet?: ElementorSize;
   width_mobile?: ElementorSize;

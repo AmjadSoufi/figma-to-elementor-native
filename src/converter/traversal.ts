@@ -407,7 +407,15 @@ export function convertNode(
 
   // ── TEXT ──────────────────────────────────────────────────────────────────
   if (node.type === "TEXT") {
-    return mapTextNode(node, opts);
+    // Detect visual centering: the text box is not full-width and its horizontal
+    // midpoint is close to the parent's horizontal midpoint. This indicates the
+    // designer used container centering rather than text-align: center.
+    const isVisuallyCentred =
+      node.textAlignHorizontal === "LEFT" &&
+      parentWidth > 0 &&
+      node.width < parentWidth * 0.85 &&
+      Math.abs(node.x + node.width / 2 - parentWidth / 2) < parentWidth * 0.08;
+    return mapTextNode(node, opts, isVisuallyCentred);
   }
 
   // ── LINE ─────────────────────────────────────────────────────────────────

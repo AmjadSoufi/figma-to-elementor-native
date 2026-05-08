@@ -17,9 +17,11 @@ module.exports = {
   resolve: {
     extensions: ['.tsx', '.ts', '.js'],
   },
+  target: ['web', 'es2017'],
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist'),
+    iife: true,
   },
   plugins: [
     new CopyPlugin({

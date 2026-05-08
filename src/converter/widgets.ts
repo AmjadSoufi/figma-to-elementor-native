@@ -178,7 +178,11 @@ export function classifyComponent(name: string): ComponentHint {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /** TEXT NODE → Heading or Text Editor */
-export function mapTextNode(node: TextNode, opts: ConversionOptions): ElementorWidget {
+export function mapTextNode(
+  node: TextNode,
+  opts: ConversionOptions,
+  parentCentersChildren = false,
+): ElementorWidget {
   const id = makeWidgetId();
   checkMixedTextStyles(node);
   checkEffects(node);
@@ -187,11 +191,16 @@ export function mapTextNode(node: TextNode, opts: ConversionOptions): ElementorW
   const typo = textAnalysisToTypography(analysis, opts.mobileBreakpoint);
   const isHeading = analysis.inferredLevel !== "body";
 
+  // If the text node's own alignment is LEFT but the parent visually centers it,
+  // honour the visual intent — the designer used container centering, not text-align.
+  const effectiveAlign =
+    analysis.textAlign === "left" && parentCentersChildren ? "center" : analysis.textAlign;
+
   if (isHeading) {
     const s: HeadingSettings = {
       title: analysis.content,
       header_size: analysis.inferredLevel as "h1" | "h2" | "h3" | "h4" | "h5" | "h6",
-      align: analysis.textAlign,
+      align: effectiveAlign,
       title_color: analysis.color,
       ...typo,
     };
@@ -200,7 +209,7 @@ export function mapTextNode(node: TextNode, opts: ConversionOptions): ElementorW
 
   const s: TextEditorSettings = {
     editor: `<p>${analysis.content}</p>`,
-    align: analysis.textAlign,
+    align: effectiveAlign,
     text_color: analysis.color,
     ...typo,
   };

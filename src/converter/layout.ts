@@ -465,11 +465,14 @@ export function buildContainerSettings(
 
   // ── Width / Content Width ──────────────────────────────────────────────────
   if (isTopLevel) {
-    // Top-level section → full canvas width
-    settings.content_width = "full";
-    settings.width = makeSize(100, "%");
-    settings.width_tablet = makeSize(100, "%");
-    settings.width_mobile = makeSize(100, "%");
+    // Strategy A: section background spans full viewport; theme's content-width
+    // setting centres and constrains the inner content band (e.g. 1200px).
+    settings.content_width = "boxed";
+    // Emit boxed_width so the section respects the Figma grid's column band
+    // even when the WordPress theme default differs from the design.
+    if (opts.containerMaxWidth > 0) {
+      settings.boxed_width = makeSize(opts.containerMaxWidth, "px");
+    }
   } else if (isFullBleedBreakout) {
     // Child spans the full parent width and is explicitly breaking out of the
     // 12-col grid — emit full-bleed width.
